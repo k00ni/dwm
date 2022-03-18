@@ -1,0 +1,43 @@
+{
+    "name": "k00ni/dwm",
+    "description": "",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Konrad Abicht",
+            "email": "k.abicht@gmail.com",
+            "role": "Owner, Developer"
+        }
+    ],
+    "bin": [
+        "bin/mergeJsonLDFilesToNQuad",
+        "bin/verifyProcesses"
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "php": "^8.0",
+        "composer-runtime-api": "^2.2",
+        "ml/json-ld": "^1.2"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.0",
+        "phpstan/phpstan": "^1.4",
+        "phpstan/phpstan-phpunit": "^1.0.0",
+        "phpunit/phpunit": "^9.5"
+    },
+    "autoload": {
+        "files": [
+            "src/functions.php"
+        ],
+        "psr-4": {
+            "DWM\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "DWM\\Test\\": "test/",
+            "DWM\\Tests\\": "tests/"
+        }
+    }
+}

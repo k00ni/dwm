@@ -1,0 +1,13 @@
+{
+    "@context": {
+        "dwm": "https://github.com/k00ni/dwm#"
+    },
+    "@id": "dwm:MergeJsonLDFiles",
+    "@type": "dwm:Process",
+    "dwm:class_path": "\\\\DWM\\\\Process\\\\MergeJsonLDFiles",
+    "dwm:required_steps": [
+        "loadDwmJson",
+        "collectKnowledgeFilepaths",
+        "mergeIntoNTriples"
+    ]
+}

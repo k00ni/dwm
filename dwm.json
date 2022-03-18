@@ -1,0 +1,6 @@
+{
+    "knowledge-location": {
+        "type": "files",
+        "root-folder": "knowledge"
+    }
+}

@@ -1,0 +1,36 @@
+{
+    "@context": {
+        "dwm": "https://github.com/k00ni/dwm#",
+        "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+        "schema": "https://schema.org/",
+        "sh": "http://www.w3.org/ns/shacl#"
+    },
+    "@graph": [
+        {
+            "@id": "dwm:Process",
+            "@type": "rdfs:Class",
+            "rdfs:label": "Process",
+            "rdfs:comment": "A process represents an ordered list of process steps."
+        },
+        {
+            "@type": "sh:NodeShape",
+            "sh:targetClass": {
+                "@id": "dwm:Process"
+            },
+            "sh:property": [
+                {
+                    "sh:path": {
+                        "@id": "dwm:class_path"
+                    },
+                    "sh:minCount": 1
+                },
+                {
+                    "sh:path": {
+                        "@id": "dwm:required_steps"
+                    },
+                    "sh:minCount": 1
+                }
+            ]
+        }
+    ]
+}

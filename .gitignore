@@ -1,3 +1,4 @@
+/.php-cs-fixer.cache
 /composer.lock
 /knowledge/__merged_knowledge.nt
 /vendor

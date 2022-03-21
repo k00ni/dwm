@@ -9,6 +9,9 @@ namespace DWM\SimpleStructure;
  */
 final class FirstInFirstOutList
 {
+    /**
+     * @var array<mixed>
+     */
     private array $elements = [];
     private int $counter = 0;
 

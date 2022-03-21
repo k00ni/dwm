@@ -1,23 +1,17 @@
 includes:
     - vendor/phpstan/phpstan-phpunit/extension.neon
-    - vendor/phpstan/phpstan-doctrine/extension.neon
 
 parameters:
     bootstrapFiles:
         - vendor/autoload.php
 
-    excludes_analyse:
-        - %currentWorkingDirectory%/src/DoctrineMigrations/*
-
     fileExtensions:
         - php
 
-    level: 5
+    level: max
 
     paths:
         - src
-        - test
-        - tests
 
     parallel:
         maximumNumberOfProcesses: 1

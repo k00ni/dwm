@@ -6,9 +6,11 @@ namespace DWM\Process;
 
 use DWM\Attribute\ProcessStep;
 use DWM\SimpleStructure\Process;
+use Exception;
 use FilesystemIterator;
 use ML\JsonLD\JsonLD;
 use ML\JsonLD\NQuads;
+use OuterIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
@@ -16,6 +18,9 @@ class MergeJsonLDFiles extends Process
 {
     private string $currentPath;
 
+    /**
+     * @var array<string,string>
+     */
     private array $dwmConfigArray;
 
     /**
@@ -24,6 +29,10 @@ class MergeJsonLDFiles extends Process
     private string $dwmConfigFilename = 'dwm.json';
 
     private string $knowledgeFolderPath;
+
+    /**
+     * @var \SplFileInfo[]
+     */
     private iterable $knowledgeFilepathIterator;
 
     /**
@@ -35,23 +44,30 @@ class MergeJsonLDFiles extends Process
     {
         parent::__construct();
 
-        $this->currentPath = getcwd();
+        $cwd = getcwd();
+        if (is_string($cwd)) {
+            $this->currentPath = $cwd;
+        } else {
+            throw new Exception('getcwd() return false!');
+        }
 
         $this->addStep('loadDwmJson');
 
         $this->addStep('collectKnowledgeFilepaths');
 
         $this->addStep('mergeIntoNTriples');
-
-        $this->verifyThisInstance();
     }
 
     #[ProcessStep()]
     protected function loadDwmJson(): void
     {
-        $this->dwmConfigArray = loadDwmJsonAndGetArrayRepresentation($this->currentPath, $this->dwmConfigFilename);
+        $this->dwmConfigArray = loadDwmJsonAndGetArrayRepresentation($this->currentPath.'/'.$this->dwmConfigFilename);
 
-        $this->knowledgeFolderPath = $this->currentPath.'/'.$this->dwmConfigArray['knowledge-location']['root-folder'];
+        /** @var array<mixed> */
+        $location = $this->dwmConfigArray['knowledge-location'];
+        /** @var string */
+        $rootFolder = $location['root-folder'];
+        $this->knowledgeFolderPath = $this->currentPath.'/'.$rootFolder;
     }
 
     #[ProcessStep()]
@@ -70,6 +86,8 @@ class MergeJsonLDFiles extends Process
         $result = '';
 
         foreach ($this->knowledgeFilepathIterator as $path) {
+            /** @var \SplFileInfo */
+            $path = $path;
             if ($path->isDir()) {
             } elseif ($path->isLink()) {
             } elseif (str_contains($path->getPathname(), '.jsonld')) {

@@ -13,7 +13,7 @@ use Exception;
  */
 abstract class Process
 {
-    private mixed $result;
+    private mixed $result = null;
 
     private FirstInFirstOutList $steps;
 
@@ -34,15 +34,12 @@ abstract class Process
         }
 
         while ($data = $this->steps->getNextElementFromList()) {
-            call_user_func([$this, $data]);
+            /** @var callable() */
+            $param = [$this, $data];
+            call_user_func($param);
         }
 
         return $this;
-    }
-
-    protected function verifyThisInstance()
-    {
-        // TODO check compliance with a given TTL file?
     }
 
     protected function getResult(): mixed

@@ -4,8 +4,8 @@
     },
     "@id": "dwm:VerifyProcessKnowledgeMatchesCode",
     "@type": "dwm:Process",
-    "dwm:class_path": "\\\\DWM\\\\Process\\\\VerifyProcessKnowledgeMatchesCode",
-    "dwm:required_steps": [
+    "dwm:classPath": "\\\\DWM\\\\Process\\\\VerifyProcessKnowledgeMatchesCode",
+    "dwm:requiredSteps": [
         "loadDwmJson",
         "readMergedKnowledge",
         "collectProcessRelatedKnowledge",

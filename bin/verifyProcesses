@@ -2,9 +2,11 @@
 <?php
 
 use DWM\Process\VerifyProcessKnowledgeMatchesCode;
+use DWM\DWMConfig;
+use DWM\Result\ProcessKnowlegeCheckResult;
 
 require $_composer_autoload_path ?? __DIR__ . '/../vendor/autoload.php';
 
-(new VerifyProcessKnowledgeMatchesCode())->doSteps();
+(new VerifyProcessKnowledgeMatchesCode(new DWMConfig(), new ProcessKnowlegeCheckResult()))->doSteps();
 
 return 0;

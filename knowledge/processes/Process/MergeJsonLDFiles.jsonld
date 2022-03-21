@@ -4,8 +4,8 @@
     },
     "@id": "dwm:MergeJsonLDFiles",
     "@type": "dwm:Process",
-    "dwm:class_path": "\\\\DWM\\\\Process\\\\MergeJsonLDFiles",
-    "dwm:required_steps": [
+    "dwm:classPath": "\\\\DWM\\\\Process\\\\MergeJsonLDFiles",
+    "dwm:requiredSteps": [
         "loadDwmJson",
         "collectKnowledgeFilepaths",
         "mergeIntoNTriples"

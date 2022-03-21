@@ -1,6 +1,15 @@
 {
-    "knowledge-location": {
+    "knowledgeLocation": {
         "type": "files",
-        "root-folder": "knowledge"
+        "folders": [
+            "knowledge",
+            "examples/SchemaOrgPerson/knowledge"
+        ]
+    },
+    "mergedKnowledgeFile": {
+        "path": "knowledge/__merged_knowledge.nt"
+    },
+    "resultFolder": {
+        "path": "results"
     }
 }

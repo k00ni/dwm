@@ -1,10 +1,11 @@
 #!/usr/bin/env php
 <?php
 
+use DWM\DWMConfig;
 use DWM\Process\MergeJsonLDFiles;
 
 require $_composer_autoload_path ?? __DIR__ . '/../vendor/autoload.php';
 
-(new MergeJsonLDFiles())->doSteps();
+(new MergeJsonLDFiles(new DWMConfig()))->doSteps();
 
 return 0;

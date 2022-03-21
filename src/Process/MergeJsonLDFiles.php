@@ -5,42 +5,19 @@ declare(strict_types=1);
 namespace DWM\Process;
 
 use DWM\Attribute\ProcessStep;
+use DWM\DWMConfig;
 use DWM\SimpleStructure\Process;
 use Exception;
-use FilesystemIterator;
 use ML\JsonLD\JsonLD;
 use ML\JsonLD\NQuads;
-use OuterIterator;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 
 class MergeJsonLDFiles extends Process
 {
     private string $currentPath;
 
-    /**
-     * @var array<string,string>
-     */
-    private array $dwmConfigArray;
+    private DWMConfig $dwmConfig;
 
-    /**
-     * @todo move to JSONLD
-     */
-    private string $dwmConfigFilename = 'dwm.json';
-
-    private string $knowledgeFolderPath;
-
-    /**
-     * @var \SplFileInfo[]
-     */
-    private iterable $knowledgeFilepathIterator;
-
-    /**
-     * @todo move to JSONLD
-     */
-    private string $mergedKnowledgeFilenameNt = '__merged_knowledge.nt';
-
-    public function __construct()
+    public function __construct(DWMConfig $dwmConfig)
     {
         parent::__construct();
 
@@ -53,30 +30,15 @@ class MergeJsonLDFiles extends Process
 
         $this->addStep('loadDwmJson');
 
-        $this->addStep('collectKnowledgeFilepaths');
-
         $this->addStep('mergeIntoNTriples');
+
+        $this->dwmConfig = $dwmConfig;
     }
 
     #[ProcessStep()]
     protected function loadDwmJson(): void
     {
-        $this->dwmConfigArray = loadDwmJsonAndGetArrayRepresentation($this->currentPath.'/'.$this->dwmConfigFilename);
-
-        /** @var array<mixed> */
-        $location = $this->dwmConfigArray['knowledge-location'];
-        /** @var string */
-        $rootFolder = $location['root-folder'];
-        $this->knowledgeFolderPath = $this->currentPath.'/'.$rootFolder;
-    }
-
-    #[ProcessStep()]
-    protected function collectKnowledgeFilepaths(): void
-    {
-        $this->knowledgeFilepathIterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($this->knowledgeFolderPath, FilesystemIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::CHILD_FIRST
-        );
+        $this->dwmConfig->load($this->currentPath);
     }
 
     #[ProcessStep()]
@@ -85,17 +47,18 @@ class MergeJsonLDFiles extends Process
         $nquads = new NQuads();
         $result = '';
 
-        foreach ($this->knowledgeFilepathIterator as $path) {
-            /** @var \SplFileInfo */
-            $path = $path;
-            if ($path->isDir()) {
-            } elseif ($path->isLink()) {
-            } elseif (str_contains($path->getPathname(), '.jsonld')) {
-                $quads = JsonLD::toRdf($path->getPathname());
-                $result .= $nquads->serialize($quads);
-            }
-        }
+        array_map(function ($filePath) use ($nquads, &$result) {
+            /** @var string */
+            $filePath = $filePath;
 
-        file_put_contents($this->knowledgeFolderPath.'/'.$this->mergedKnowledgeFilenameNt, $result);
+            $quads = JsonLD::toRdf($filePath);
+            $result .= $nquads->serialize($quads);
+        }, $this->dwmConfig->getKnowledgeFilePaths());
+
+        if (is_string($this->dwmConfig->getMergedKnowledgeFilePath())) {
+            file_put_contents($this->dwmConfig->getMergedKnowledgeFilePath(), $result);
+        } else {
+            throw new Exception('File path of merged knowledge file is null.');
+        }
     }
 }

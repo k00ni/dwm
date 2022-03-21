@@ -20,13 +20,13 @@
             "sh:property": [
                 {
                     "sh:path": {
-                        "@id": "dwm:class_path"
+                        "@id": "dwm:classPath"
                     },
                     "sh:minCount": 1
                 },
                 {
                     "sh:path": {
-                        "@id": "dwm:required_steps"
+                        "@id": "dwm:requiredSteps"
                     },
                     "sh:minCount": 1
                 }

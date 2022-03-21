@@ -106,7 +106,7 @@ class VerifyProcessKnowledgeMatchesCode extends Process
             $typeList = $propertyValuePairs['@type'] ?? [];
             if (
                 isset($propertyValuePairs['@type'])
-                && in_array($this->dwmPrefix.'Process', $typeList)
+                && in_array($this->dwmPrefix.'Process', $typeList, true)
             ) {
                 /** @var array<mixed> */
                 $requiredSteps = $propertyValuePairs[$this->dwmPrefix.'required_steps'];

@@ -13,7 +13,7 @@ use Exception;
  */
 abstract class Process
 {
-    private mixed $result = null;
+    protected mixed $result = null;
 
     private FirstInFirstOutList $steps;
 
@@ -42,7 +42,7 @@ abstract class Process
         return $this;
     }
 
-    protected function getResult(): mixed
+    public function getResult(): mixed
     {
         return $this->result;
     }

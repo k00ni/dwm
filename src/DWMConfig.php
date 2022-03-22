@@ -34,6 +34,8 @@ final class DWMConfig
 
     private ?string $mergedKnowledgeFilePath = null;
 
+    private ?string $pathToJenaShaclBinFile = null;
+
     private string $prefix = 'https://github.com/k00ni/dwm#';
 
     private ?string $resultFolderPath = null;
@@ -70,6 +72,11 @@ final class DWMConfig
     public function getResultFolderPath(): ?string
     {
         return $this->resultFolderPath;
+    }
+
+    public function getPathToJenaShaclBinFile(): ?string
+    {
+        return $this->pathToJenaShaclBinFile;
     }
 
     /**
@@ -160,5 +167,20 @@ final class DWMConfig
         /** @var string */
         $path = $resultFolder['path'];
         $this->resultFolderPath = $path;
+
+        /**
+         * result folder path
+         */
+        if (isset($data['jenaShaclBinFile'])) {
+            /** @var array<mixed> */
+            $jenaShaclBinFile = $data['jenaShaclBinFile'];
+            /** @var string */
+            $pathToJenaShaclBinFile = $jenaShaclBinFile['path'];
+            if (is_string($pathToJenaShaclBinFile) && file_exists($pathToJenaShaclBinFile)) {
+                $this->pathToJenaShaclBinFile = $pathToJenaShaclBinFile;
+            } else {
+                throw new Exception('Jena SHACL bin file not found: '.$pathToJenaShaclBinFile);
+            }
+        }
     }
 }

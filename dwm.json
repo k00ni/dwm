@@ -11,5 +11,8 @@
     },
     "resultFolder": {
         "path": "results"
+    },
+    "jenaShaclBinFile": {
+        "path": "/home/dwm/apache-jena/bin/shacl"
     }
 }

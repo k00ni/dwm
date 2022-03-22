@@ -20,5 +20,5 @@ stan:
 
 verify:
 	bin/mergeJsonLDFiles
-	/home/dwm/apache-jena/bin/shacl validate --data ./knowledge/__merged_knowledge.nt
+	bin/runJenaShaclBin
 	bin/verifyProcesses

@@ -32,7 +32,8 @@ final class DWMConfig
      */
     private array $knowledgeFolderPaths = [];
 
-    private ?string $mergedKnowledgeFilePath = null;
+    private ?string $mergedKnowledgeNtFilePath = null;
+    private ?string $mergedKnowledgeJsonLDFilePath = null;
 
     private ?string $pathToJenaShaclBinFile = null;
 
@@ -59,9 +60,17 @@ final class DWMConfig
     /**
      * @return ?string
      */
-    public function getMergedKnowledgeFilePath(): ?string
+    public function getMergedKnowledgeJsonLDFilePath(): ?string
     {
-        return $this->mergedKnowledgeFilePath;
+        return $this->mergedKnowledgeJsonLDFilePath;
+    }
+
+    /**
+     * @return ?string
+     */
+    public function getMergedKnowledgeNtFilePath(): ?string
+    {
+        return $this->mergedKnowledgeNtFilePath;
     }
 
     public function getPrefix(): string
@@ -151,13 +160,17 @@ final class DWMConfig
         $this->collectKnowledgeFilePaths();
 
         /**
-         * file path to merged knowledge
+         * file paths to merged knowledge
          */
         /** @var array<mixed> */
         $mergedKnowledgeFile = $data['mergedKnowledgeFile'];
         /** @var string */
-        $path = $mergedKnowledgeFile['path'];
-        $this->mergedKnowledgeFilePath = $path;
+        $jsonLDPath = $mergedKnowledgeFile['jsonLDFilePath'];
+        /** @var string */
+        $ntPath = $mergedKnowledgeFile['ntFilePath'];
+
+        $this->mergedKnowledgeJsonLDFilePath = $jsonLDPath;
+        $this->mergedKnowledgeNtFilePath = $ntPath;
 
         /**
          * result folder path
@@ -174,8 +187,8 @@ final class DWMConfig
         if (isset($data['jenaShaclBinFile'])) {
             /** @var array<mixed> */
             $jenaShaclBinFile = $data['jenaShaclBinFile'];
-            /** @var string */
-            $pathToJenaShaclBinFile = $jenaShaclBinFile['path'];
+            /** @var string|null */
+            $pathToJenaShaclBinFile = $jenaShaclBinFile['path'] ?? null;
             if (is_string($pathToJenaShaclBinFile) && file_exists($pathToJenaShaclBinFile)) {
                 $this->pathToJenaShaclBinFile = $pathToJenaShaclBinFile;
             } else {

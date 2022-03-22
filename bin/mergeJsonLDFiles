@@ -6,6 +6,4 @@ use DWM\Process\MergeJsonLDFiles;
 
 require $_composer_autoload_path ?? __DIR__ . '/../vendor/autoload.php';
 
-(new MergeJsonLDFiles(new DWMConfig()))->doSteps();
-
-return 0;
+return (new MergeJsonLDFiles(new DWMConfig()))->doSteps()->getResult();

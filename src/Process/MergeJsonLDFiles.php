@@ -32,6 +32,8 @@ class MergeJsonLDFiles extends Process
 
         $this->addStep('mergeIntoNTriples');
 
+        $this->addStep('mergeIntoJsonLD');
+
         $this->dwmConfig = $dwmConfig;
     }
 
@@ -55,10 +57,24 @@ class MergeJsonLDFiles extends Process
             $result .= $nquads->serialize($quads);
         }, $this->dwmConfig->getKnowledgeFilePaths());
 
-        if (is_string($this->dwmConfig->getMergedKnowledgeFilePath())) {
-            file_put_contents($this->dwmConfig->getMergedKnowledgeFilePath(), $result);
+        if (is_string($this->dwmConfig->getMergedKnowledgeNtFilePath())) {
+            file_put_contents($this->dwmConfig->getMergedKnowledgeNtFilePath(), $result);
         } else {
             throw new Exception('File path of merged knowledge file is null.');
         }
+    }
+
+    #[ProcessStep()]
+    protected function mergeIntoJsonLD(): void
+    {
+        $nquads = new NQuads();
+        $ntriples = file_get_contents($this->dwmConfig->getMergedKnowledgeNtFilePath());
+
+        $quads = $nquads->parse($ntriples);
+        $document = JsonLD::fromRdf($quads);
+
+        $jsonLD = JsonLD::toString($document, true);
+
+        file_put_contents($this->dwmConfig->getMergedKnowledgeJsonLDFilePath(), $jsonLD);
     }
 }

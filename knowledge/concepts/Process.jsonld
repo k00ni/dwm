@@ -13,6 +13,7 @@
             "rdfs:comment": "A process represents an ordered list of process steps."
         },
         {
+            "@id": "dwm:ProcessShape",
             "@type": "sh:NodeShape",
             "sh:targetClass": {
                 "@id": "dwm:Process"

@@ -1,18 +1,21 @@
 {
-    "knowledgeLocation": {
-        "type": "files",
-        "folders": [
-            "knowledge",
-            "examples/SchemaOrgPerson/knowledge"
-        ]
-    },
-    "mergedKnowledgeFile": {
-        "path": "knowledge/__merged_knowledge.nt"
-    },
-    "resultFolder": {
-        "path": "results"
+    "generateDBClassFiles": {
+        "path": "generatedDBClasses"
     },
     "jenaShaclBinFile": {
         "path": "/home/dwm/apache-jena/bin/shacl"
+    },
+    "knowledgeLocation": {
+        "type": "files",
+        "folders": [
+            "knowledge"
+        ]
+    },
+    "mergedKnowledgeFile": {
+        "jsonLDFilePath": "mergedKnowledge/__merged_knowledge.jsonld",
+        "ntFilePath": "mergedKnowledge/__merged_knowledge.nt"
+    },
+    "resultFolder": {
+        "path": "results"
     }
 }

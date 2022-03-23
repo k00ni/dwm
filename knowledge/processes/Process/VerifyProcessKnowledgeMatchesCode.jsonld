@@ -7,10 +7,11 @@
     "dwm:classPath": "\\\\DWM\\\\Process\\\\VerifyProcessKnowledgeMatchesCode",
     "dwm:requiredSteps": [
         "loadDwmJson",
-        "readMergedKnowledge",
-        "collectProcessRelatedKnowledge",
+        "createGraphBasedOnMergedKnowledge",
+        "collectProcessClassPathAndRequiredSteps",
         "checkClassExistence",
         "checkProcessClassHasRequiredSteps",
-        "checkThatProcessStepAmountIsEqual"
+        "checkThatProcessStepAmountIsEqual",
+        "generateReport"
     ]
 }

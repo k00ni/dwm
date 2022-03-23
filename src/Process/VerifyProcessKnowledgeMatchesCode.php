@@ -204,6 +204,8 @@ class VerifyProcessKnowledgeMatchesCode extends Process
     #[ProcessStep()]
     protected function generateReport(): void
     {
-        $this->processKnowlegeCheckResult->writeReport($this->dwmConfig->getResultFolderPath().'/processKnowlege.md');
+        $this->result = $this->processKnowlegeCheckResult->getFoundError() ? 1 : 0;
+
+        echo $this->processKnowlegeCheckResult->generateReport();
     }
 }

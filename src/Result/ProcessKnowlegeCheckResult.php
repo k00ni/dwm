@@ -21,6 +21,8 @@ final class ProcessKnowlegeCheckResult
      */
     private array $existingClasses = [];
 
+    private bool $foundError = false;
+
     /**
      * @var array<string>
      */
@@ -31,6 +33,8 @@ final class ProcessKnowlegeCheckResult
      */
     public function addClassWithMissingRequiredSteps(string $classPath, array $missingRequiredSteps): void
     {
+        $this->foundError = true;
+
         $this->classesWithMissingRequiredSteps[] = [
             'classPath' => $classPath,
             'missingRequiredSteps' => $missingRequiredSteps,
@@ -42,6 +46,8 @@ final class ProcessKnowlegeCheckResult
      */
     public function addClassWithMoreStepsThanRequired(string $classPath, array $additionalSteps): void
     {
+        $this->foundError = true;
+
         $this->classesWithMoreStepsThanRequired[] = [
             'classPath' => $classPath,
             'additionalSteps' => $additionalSteps,
@@ -55,6 +61,8 @@ final class ProcessKnowlegeCheckResult
 
     public function addNonExistingClass(string $classPath): void
     {
+        $this->foundError = true;
+
         $this->nonExistingClasses[] = $classPath;
     }
 
@@ -82,6 +90,11 @@ final class ProcessKnowlegeCheckResult
         return $this->existingClasses;
     }
 
+    public function getFoundError(): bool
+    {
+        return $this->foundError;
+    }
+
     /**
      * @return array<string>
      */
@@ -90,48 +103,42 @@ final class ProcessKnowlegeCheckResult
         return $this->nonExistingClasses;
     }
 
+    private function colorTextGreen(string $line): string
+    {
+        return "\033[42m".$line."\033[0m";
+    }
+
+    private function colorTextRed(string $line): string
+    {
+        return "\033[41m".$line."\033[0m";
+    }
+
     /**
      * @todo move that into a dedicated writer class (With different output formats)
      */
-    public function writeReport(string $reportFilePath): void
+    public function generateReport(): string
     {
         /** @var array<string> */
         $output = [];
-        $output[] = '# Process Knowledge Result';
         $output[] = '';
-
-        // existing classes
-        $output[] = 'The following classes were found:';
-
-        if (0 < count($this->getExistingClasses())) {
-            array_map(function ($classPath) use (&$output) {
-                $output[] = '* '.$classPath;
-            }, $this->getExistingClasses());
-        } else {
-            $output[] = '*(Nothing found)*';
-        }
-
-        $output[] = '';
+        $output[] = 'DWM - Report for process knowledge check';
         $output[] = '';
 
         // non existing classes
-        $output[] = 'The following classes do not exist:';
-
         if (0 < count($this->getNonExistingClasses())) {
+            $output[] = '';
+            $output[] = $this->colorTextRed('The following classes do not exist:');
             array_map(function ($classPath) use (&$output) {
                 $output[] = '* '.$classPath;
             }, $this->getNonExistingClasses());
-        } else {
-            $output[] = '*(Nothing found)*';
+
+            $output[] = '';
         }
 
-        $output[] = '';
-        $output[] = '';
-
         // classes with missing required steps
-        $output[] = 'The following classes have missing required steps:';
-
         if (0 < count($this->getClassesWithMissingRequiredSteps())) {
+            $output[] = '';
+            $output[] = $this->colorTextRed('The following classes have missing required steps:');
             array_map(function ($entry) use (&$output) {
                 /** @var array<mixed> */
                 $entry = $entry;
@@ -141,17 +148,14 @@ final class ProcessKnowlegeCheckResult
                 $missingRequiredSteps = $entry['missingRequiredSteps'];
                 $output[] = '* '.$classPath.' ('.implode(', ', $missingRequiredSteps).')';
             }, $this->getClassesWithMissingRequiredSteps());
-        } else {
-            $output[] = '*(Nothing found)*';
+
+            $output[] = '';
         }
 
-        $output[] = '';
-        $output[] = '';
-
         // classes with missing required steps
-        $output[] = 'The following classes have more steps than required:';
-
         if (0 < count($this->getClassesWithMoreStepsThanRequired())) {
+            $output[] = '';
+            $output[] = $this->colorTextRed('The following classes have more steps than required:');
             array_map(function ($entry) use (&$output) {
                 /** @var array<mixed> */
                 $entry = $entry;
@@ -161,11 +165,18 @@ final class ProcessKnowlegeCheckResult
                 $additionalSteps = $entry['additionalSteps'];
                 $output[] = '* '.$classPath.' ('.implode(', ', $additionalSteps).')';
             }, $this->getClassesWithMoreStepsThanRequired());
-        } else {
-            $output[] = '*(Nothing found)*';
         }
 
-        // write result file
-        file_put_contents($reportFilePath, implode(PHP_EOL, $output));
+        if ($this->foundError) {
+            $output[] = '';
+            $output[] = $this->colorTextRed('FAIL - Errors found');
+        } else {
+            $output[] = $this->colorTextGreen('OK - No Errors found');
+        }
+
+        $output[] = '';
+        $output[] = '';
+
+        return implode(PHP_EOL, $output);
     }
 }

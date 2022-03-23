@@ -1,41 +1,16 @@
 <?php
 
-/**
- * @todo create separate classes folder: src/DWM
- */
-
-function jsonLdNodeHasPredicate(stdClass $node, string $predicate): bool
-{
-    /** @var array<mixed> */
-    $propertyValuePairs = get_object_vars($node);
-    return true === isset($propertyValuePairs[$predicate]);
-}
+declare(strict_types=1);
 
 /**
- * @return array<string>
+ * It seems that empty() is not enough to check, if something is really empty.
+ * This function makes sure of the edge cases.
+ *
+ * @see https://stackoverflow.com/questions/718986/checking-if-the-string-is-empty
  */
-function jsonLdGetReferencedUrisOfProperty(stdClass $node, string $predicate): array
+function isEmpty(string|null $input): bool
 {
-    /** @var array<mixed> */
-    $propertyValuePairs = get_object_vars($node);
+    $input = trim((string) $input);
 
-    if (true === isset($propertyValuePairs[$predicate])) {
-        /** @var array<\stdClass> */
-        $entries = $propertyValuePairs[$predicate];
-
-        /** @var array<string> */
-        $result = array_map(function($entry) {
-            /** @var array<mixed> */
-            $propertyValuePairs = get_object_vars($entry);
-            if (isset($propertyValuePairs['@id'])) {
-                return $propertyValuePairs['@id'];
-            } else {
-                throw new Exception('No @id key found on: '.json_encode($propertyValuePairs));
-            }
-        }, $entries);
-
-        return $result;
-    } else {
-        throw new Exception('$node does not have predicate: '. $predicate);
-    }
+    return 0 == strlen($input) || 1 !== preg_match('/\S/', $input);
 }

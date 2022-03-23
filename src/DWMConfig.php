@@ -181,7 +181,7 @@ final class DWMConfig
         $path = $resultFolder['path'];
         $this->resultFolderPath = $path;
 
-        /**
+        /*
          * result folder path
          */
         if (isset($data['jenaShaclBinFile'])) {

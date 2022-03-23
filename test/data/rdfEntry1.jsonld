@@ -1,0 +1,25 @@
+{
+    "@id": "_:b0",
+    "@type": [
+        "https://github.com/k00ni/dwm#Process"
+    ],
+    "http://www.w3.org/ns/shacl#minCount": [
+        {
+            "@value": "1",
+            "@type": "http://www.w3.org/2001/XMLSchema#integer"
+        }
+    ],
+    "http://www.w3.org/ns/shacl#path": [
+        {
+            "@id": "https://github.com/k00ni/dwm#classPath"
+        },
+        {
+            "@id": "https://schema.org/givenName"
+        }
+    ],
+    "http://www.w3.org/ns/shacl#datatype": [
+        {
+            "@value": "xsd:string"
+        }
+    ]
+}

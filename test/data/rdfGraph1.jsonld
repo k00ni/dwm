@@ -1,0 +1,188 @@
+[
+    {
+        "@id": "_:b30912e89e2",
+        "http://www.w3.org/ns/shacl#minCount": [
+            {
+                "@value": "1",
+                "@type": "http://www.w3.org/2001/XMLSchema#integer"
+            }
+        ],
+        "http://www.w3.org/ns/shacl#path": [
+            {
+                "@id": "https://github.com/k00ni/dwm#classPath"
+            }
+        ]
+    },
+    {
+        "@id": "_:ba2be4cc2ed",
+        "http://www.w3.org/ns/shacl#datatype": [
+            {
+                "@value": "xsd:string"
+            }
+        ],
+        "http://www.w3.org/ns/shacl#minCount": [
+            {
+                "@value": "1",
+                "@type": "http://www.w3.org/2001/XMLSchema#integer"
+            }
+        ],
+        "http://www.w3.org/ns/shacl#path": [
+            {
+                "@id": "https://schema.org/givenName"
+            }
+        ]
+    },
+    {
+        "@id": "_:bcccdaaca37",
+        "http://www.w3.org/ns/shacl#minCount": [
+            {
+                "@value": "1",
+                "@type": "http://www.w3.org/2001/XMLSchema#integer"
+            }
+        ],
+        "http://www.w3.org/ns/shacl#path": [
+            {
+                "@id": "https://github.com/k00ni/dwm#requiredSteps"
+            }
+        ]
+    },
+    {
+        "@id": "https://github.com/k00ni/dwm#MergeJsonLDFiles",
+        "@type": [
+            "https://github.com/k00ni/dwm#Process"
+        ],
+        "https://github.com/k00ni/dwm#classPath": [
+            {
+                "@value": "\\DWM\\Process\\MergeJsonLDFiles"
+            }
+        ],
+        "https://github.com/k00ni/dwm#requiredSteps": [
+            {
+                "@value": "loadDwmJson"
+            },
+            {
+                "@value": "collectKnowledgeFilepaths"
+            },
+            {
+                "@value": "mergeIntoNTriples"
+            }
+        ]
+    },
+    {
+        "@id": "https://github.com/k00ni/dwm#Process",
+        "@type": [
+            "http://www.w3.org/2000/01/rdf-schema#Class"
+        ],
+        "http://www.w3.org/2000/01/rdf-schema#comment": [
+            {
+                "@value": "A process represents an ordered list of process steps."
+            }
+        ],
+        "http://www.w3.org/2000/01/rdf-schema#label": [
+            {
+                "@value": "Process"
+            }
+        ]
+    },
+    {
+        "@id": "https://github.com/k00ni/dwm#ProcessShape",
+        "@type": [
+            "http://www.w3.org/ns/shacl#NodeShape"
+        ],
+        "http://www.w3.org/ns/shacl#property": [
+            {
+                "@id": "_:b30912e89e2"
+            },
+            {
+                "@id": "_:bcccdaaca37"
+            }
+        ],
+        "http://www.w3.org/ns/shacl#targetClass": [
+            {
+                "@id": "https://github.com/k00ni/dwm#Process"
+            }
+        ]
+    },
+    {
+        "@id": "https://github.com/k00ni/dwm#VerifyProcessKnowledgeMatchesCode",
+        "@type": [
+            "https://github.com/k00ni/dwm#Process"
+        ],
+        "https://github.com/k00ni/dwm#classPath": [
+            {
+                "@value": "\\DWM\\Process\\VerifyProcessKnowledgeMatchesCode"
+            }
+        ],
+        "https://github.com/k00ni/dwm#requiredSteps": [
+            {
+                "@value": "loadDwmJson"
+            },
+            {
+                "@value": "readMergedKnowledge"
+            },
+            {
+                "@value": "collectProcessRelatedKnowledge"
+            },
+            {
+                "@value": "checkClassExistence"
+            },
+            {
+                "@value": "checkProcessClassHasRequiredSteps"
+            },
+            {
+                "@value": "checkThatProcessStepAmountIsEqual"
+            }
+        ]
+    },
+    {
+        "@id": "https://schema.org/Person",
+        "@type": [
+            "http://www.w3.org/2000/01/rdf-schema#Class"
+        ],
+        "http://www.w3.org/2000/01/rdf-schema#comment": [
+            {
+                "@value": "A person (alive, dead, undead, or fictional)."
+            }
+        ],
+        "http://www.w3.org/2000/01/rdf-schema#label": [
+            {
+                "@value": "Person"
+            }
+        ],
+        "https://github.com/k00ni/dwm#className": [
+            {
+                "@value": "Person"
+            }
+        ],
+        "https://github.com/k00ni/dwm#isStoredInDatabase": [
+            {
+                "@value": "true",
+                "@type": "http://www.w3.org/2001/XMLSchema#boolean"
+            }
+        ]
+    },
+    {
+        "@id": "https://schema.org/PersonShape",
+        "@type": [
+            "http://www.w3.org/ns/shacl#NodeShape"
+        ],
+        "http://www.w3.org/ns/shacl#property": [
+            {
+                "@id": "_:ba2be4cc2ed"
+            }
+        ],
+        "http://www.w3.org/ns/shacl#targetClass": [
+            {
+                "@id": "https://schema.org/Person"
+            }
+        ]
+    },
+    {
+        "@id": "https://schema.org/givenName",
+        "https://github.com/k00ni/dwm#propertyName": [
+            {
+                "@value": "givenName"
+            }
+        ]
+    }
+]

@@ -1,29 +1,57 @@
 <?php
 
+declare(strict_types=1);
+
 namespace DWM\RDF;
 
 use Exception;
 
 class RDFValue
 {
-    private string $value;
-    private ?string $type;
+    private ?string $id = null;
+    private ?string $value = null;
+    private ?string $type = null;
 
     /**
      * @param array<string,string> $data
      */
     public function __construct(array $data)
     {
-        $this->value = $data['@value'];
+        $namespaceHelper = new NamespaceHelper();
+
+        // @id is either a blank node ID or URI
+        if (isset($data['@id'])) {
+            $this->id = $namespaceHelper->expandId($data['@id']);
+        } elseif (isset($data['@value'])) {
+            $this->value = $data['@value'];
+        } else {
+            throw new Exception('Either @value or @id must be set.');
+        }
 
         if (isset($data['@type'])) {
-            $this->type = $data['@type'];
+            $this->type = $namespaceHelper->expandId($data['@type']);
         }
     }
 
-    public function getValue(): string
+    public function __toString()
     {
-        return $this->value;
+        if (null != $this->id) {
+            return '<'.$this->id.'>';
+        } elseif (null != $this->value) {
+            $str = '"'.$this->value.'"';
+            if (null != $this->type) {
+                $str .= '^^<'.$this->type.'>';
+            }
+
+            return $str;
+        }
+
+        return '';
+    }
+
+    public function getIdOrValue(): ?string
+    {
+        return $this->id ?? $this->value;
     }
 
     public function getType(): ?string

@@ -19,6 +19,6 @@ stan:
 	vendor/bin/phpstan analyse -c phpstan.neon
 
 verify:
-	bin/mergeJsonLDFiles
-	bin/runJenaShaclBin
-	bin/verifyProcesses
+	bin/mergeJsonLDFiles \
+		&& bin/runJenaShaclBin \
+		&& bin/verifyProcesses

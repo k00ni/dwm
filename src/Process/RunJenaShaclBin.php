@@ -8,8 +8,6 @@ use DWM\Attribute\ProcessStep;
 use DWM\DWMConfig;
 use DWM\SimpleStructure\Process;
 use Exception;
-use ML\JsonLD\JsonLD;
-use ML\JsonLD\NQuads;
 
 class RunJenaShaclBin extends Process
 {
@@ -54,7 +52,7 @@ class RunJenaShaclBin extends Process
         $command = $this->dwmConfig->getPathToJenaShaclBinFile();
         $command .= ' validate --data ';
 
-        $command .= $this->dwmConfig->getMergedKnowledgeFilePath();
+        $command .= $this->dwmConfig->getMergedKnowledgeNtFilePath();
 
         $command = escapeshellcmd($command);
 

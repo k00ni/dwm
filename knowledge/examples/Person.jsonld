@@ -16,6 +16,10 @@
             "dwm:isStoredInDatabase": true
         },
         {
+            "@id": "schema:givenName",
+            "dwm:propertyName": "givenName"
+        },
+        {
             "@id": "schema:PersonShape",
             "@type": "sh:NodeShape",
             "sh:targetClass": {
@@ -27,7 +31,9 @@
                         "@id": "schema:givenName"
                     },
                     "sh:minCount": 1,
-                    "sh:datatype": "xsd:string"
+                    "sh:datatype": {
+                        "@id": "xsd:string"
+                    }
                 }
             ]
         }

@@ -6,11 +6,10 @@ namespace DWM\Process;
 
 use DWM\Attribute\ProcessStep;
 use DWM\DWMConfig;
+use DWM\RDF\RDFGraph;
 use DWM\Result\ProcessKnowlegeCheckResult;
 use DWM\SimpleStructure\Process;
 use Exception;
-use ML\JsonLD\JsonLD;
-use ML\JsonLD\NQuads;
 use ReflectionClass;
 
 class VerifyProcessKnowledgeMatchesCode extends Process
@@ -19,15 +18,12 @@ class VerifyProcessKnowledgeMatchesCode extends Process
 
     private DWMConfig $dwmConfig;
 
-    /**
-     * @var array<\stdClass>
-     */
-    private array $jsonLdArr;
+    private RDFGraph $graph;
 
     /**
      * @var array<mixed>
      */
-    private array $processRelatedKnowledge = [];
+    private array $processInfo;
 
     private ProcessKnowlegeCheckResult $processKnowlegeCheckResult;
 
@@ -44,9 +40,9 @@ class VerifyProcessKnowledgeMatchesCode extends Process
 
         $this->addStep('loadDwmJson');
 
-        $this->addStep('readMergedKnowledge');
+        $this->addStep('createGraphBasedOnMergedKnowledge');
 
-        $this->addStep('collectProcessRelatedKnowledge');
+        $this->addStep('collectProcessClassPathAndRequiredSteps');
 
         $this->addStep('checkClassExistence');
 
@@ -67,16 +63,19 @@ class VerifyProcessKnowledgeMatchesCode extends Process
     }
 
     #[ProcessStep()]
-    protected function readMergedKnowledge(): void
+    protected function createGraphBasedOnMergedKnowledge(): void
     {
-        $mergedFilePath = $this->dwmConfig->getMergedKnowledgeFilePath();
+        $mergedFilePath = $this->dwmConfig->getMergedKnowledgeJsonLDFilePath();
 
         if (true === is_string($mergedFilePath) && file_exists($mergedFilePath)) {
             $content = file_get_contents($mergedFilePath);
             if (is_string($content)) {
-                $nquads = new NQuads();
-                $quads = $nquads->parse($content);
-                $this->jsonLdArr = JsonLD::fromRdf($quads);
+                $jsonArr = json_decode($content, true);
+                if (is_array($jsonArr)) {
+                    $this->graph = new RDFGraph($jsonArr);
+                } else {
+                    throw new Exception('Decoded JSON is not an array.');
+                }
             } else {
                 throw new Exception('Could not read content of '.$mergedFilePath);
             }
@@ -86,72 +85,60 @@ class VerifyProcessKnowledgeMatchesCode extends Process
     }
 
     #[ProcessStep()]
-    protected function collectProcessRelatedKnowledge(): void
+    protected function collectProcessClassPathAndRequiredSteps(): void
     {
-        $processRelatedKnowledge = array_map(function ($jsonLdStdClassInstance) {
-            $propertyValuePairs = get_object_vars($jsonLdStdClassInstance);
+        // get subgraph which contains only instances of dwm:Process
+        $subGraph = $this->graph->getSubGraphWithEntriesOfType('dwm:Process');
 
-            /** @var array<string> */
-            $typeList = $propertyValuePairs['@type'] ?? [];
-            if (
-                isset($propertyValuePairs['@type'])
-                && in_array($this->dwmConfig->getPrefix().'Process', $typeList, true)
-            ) {
-                /** @var array<mixed> */
-                $requiredSteps = $propertyValuePairs[$this->dwmConfig->getPrefix().'requiredSteps'];
-                // get required steps (= method names)
-                $requiredSteps = array_map(function ($item) {
-                    return get_object_vars((object) $item)['@value'];
-                }, $requiredSteps);
+        $this->processInfo = array_map(function ($rdfEntry) {
+            /** @var \DWM\RDF\RDFEntry */
+            $rdfEntry = $rdfEntry;
+            $newEntry = ['classPath' => null, 'requiredSteps' => []];
 
-                /**
-                 * get class path
-                 */
-                /** @var array<mixed> */
-                $arr = $propertyValuePairs[$this->dwmConfig->getPrefix().'classPath'];
-                /** @var object */
-                $obj = $arr[0];
-                $classPath = get_object_vars($obj)['@value'];
-
-                // return extracted information
-                return [
-                    'id' => $propertyValuePairs['@id'],
-                    'classPath' => $classPath,
-                    'requiredSteps' => $requiredSteps,
-                ];
+            // class path
+            if ($rdfEntry->hasProperty('dwm:classPath')) {
+                $newEntry['classPath'] = $rdfEntry->getPropertyValue('dwm:classPath')->getIdOrValue();
+            } else {
+                throw new Exception('No dwm:classPath property found.');
             }
-        }, $this->jsonLdArr);
 
-        $processRelatedKnowledge = array_filter($processRelatedKnowledge);
+            // required steps
+            if ($rdfEntry->hasProperty('dwm:requiredSteps')) {
+                $values = $rdfEntry->getPropertyValues('dwm:requiredSteps');
+                foreach ($values as $value) {
+                    $newEntry['requiredSteps'][] = $value->getIdOrValue();
+                }
+            } else {
+                throw new Exception('No dwm:requiredSteps property found.');
+            }
 
-        $this->processRelatedKnowledge = $processRelatedKnowledge;
+            return $newEntry;
+        }, $subGraph->getEntries());
     }
 
     #[ProcessStep()]
     protected function checkClassExistence(): void
     {
-        $processKnowlegeCheckResult = $this->processKnowlegeCheckResult;
-
-        array_map(function ($processInfo) use ($processKnowlegeCheckResult) {
-            /** @var array<string,string> */
+        array_map(function ($processInfo) {
+            /** @var array<mixed> */
             $processInfo = $processInfo;
-            if (class_exists($processInfo['classPath'])) {
+            /** @var string */
+            $classPath = $processInfo['classPath'];
+            if (class_exists($classPath)) {
                 // OK
-                $processKnowlegeCheckResult->addExistingClass($processInfo['classPath']);
+                $this->processKnowlegeCheckResult->addExistingClass($classPath);
             } else {
                 // Fail
-                $processKnowlegeCheckResult->addNonExistingClass($processInfo['classPath']);
+                $this->processKnowlegeCheckResult->addNonExistingClass($classPath);
             }
-        }, $this->processRelatedKnowledge);
+        }, $this->processInfo);
     }
 
     #[ProcessStep()]
     protected function checkProcessClassHasRequiredSteps(): void
     {
-        $processKnowlegeCheckResult = $this->processKnowlegeCheckResult;
-
-        array_map(function ($processInfo) use ($processKnowlegeCheckResult) {
-            /** @var array<mixed> */
+        array_map(function ($processInfo) {
+            /** @var array<string,string|array<string>> */
             $processInfo = $processInfo;
             /** @var class-string<\DWM\SimpleStructure\Process> */
             $classPath = $processInfo['classPath'];
@@ -171,18 +158,16 @@ class VerifyProcessKnowledgeMatchesCode extends Process
             $missingMethods = array_filter($missingMethods);
 
             if (0 < count($missingMethods)) {
-                $processKnowlegeCheckResult->addClassWithMissingRequiredSteps($classPath, $missingMethods);
+                $this->processKnowlegeCheckResult->addClassWithMissingRequiredSteps($classPath, $missingMethods);
             }
-        }, $this->processRelatedKnowledge);
+        }, $this->processInfo);
     }
 
     #[ProcessStep()]
     protected function checkThatProcessStepAmountIsEqual(): void
     {
-        $processKnowlegeCheckResult = $this->processKnowlegeCheckResult;
-
-        array_map(function ($processInfo) use ($processKnowlegeCheckResult) {
-            /** @var array<mixed> */
+        array_map(function ($processInfo) {
+            /** @var array<string,string|array<string>> */
             $processInfo = $processInfo;
             /**
              * @var class-string<\DWM\SimpleStructure\Process>
@@ -211,9 +196,9 @@ class VerifyProcessKnowledgeMatchesCode extends Process
             // check found step methods amount and requiredSteps from knowledge base
             $diff = array_diff($stepMethods, $requiredSteps);
             if (0 < count($diff)) {
-                $processKnowlegeCheckResult->addClassWithMoreStepsThanRequired($classPath, $diff);
+                $this->processKnowlegeCheckResult->addClassWithMoreStepsThanRequired($classPath, $diff);
             }
-        }, $this->processRelatedKnowledge);
+        }, $this->processInfo);
     }
 
     #[ProcessStep()]

@@ -11,7 +11,10 @@
         }
     ],
     "bin": [
-        "bin/mergeJsonLDFilesToNQuad",
+        "bin/createKnowledgeMaps",
+        "bin/generateDBClassesFromKnowledge",
+        "bin/mergeJsonLDFiles",
+        "bin/runJenaShaclBin",
         "bin/verifyProcesses"
     ],
     "minimum-stability": "stable",

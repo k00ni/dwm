@@ -48,7 +48,7 @@ class RDFGraphTest extends TestCase
         $sut = $this->getSubjectUnderTest($this->rdfGraph1JsonArr);
 
         // getNumberOfNodes
-        self::assertCount(10, $sut);
+        self::assertCount(11, $sut);
 
         // get all classes
         $nodes = $sut->getSubGraphWithEntriesOfType('rdfs:Class');
@@ -74,7 +74,8 @@ class RDFGraphTest extends TestCase
             [
                 'givenName' => [
                     'propertyName' => 'givenName',
-                    'datatype' => 'xsd:string',
+                    'datatype' => 'string',
+                    'datatypeId' => 'http://www.w3.org/2001/XMLSchema#string',
                     'minCount' => '1',
                 ],
             ],

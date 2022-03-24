@@ -1,23 +1,9 @@
 [
     {
-        "@id": "_:b30912e89e2",
-        "http://www.w3.org/ns/shacl#minCount": [
-            {
-                "@value": "1",
-                "@type": "http://www.w3.org/2001/XMLSchema#integer"
-            }
-        ],
-        "http://www.w3.org/ns/shacl#path": [
-            {
-                "@id": "https://github.com/k00ni/dwm#classPath"
-            }
-        ]
-    },
-    {
-        "@id": "_:ba2be4cc2ed",
+        "@id": "_:b1b3dc91285",
         "http://www.w3.org/ns/shacl#datatype": [
             {
-                "@value": "xsd:string"
+                "@id": "http://www.w3.org/2001/XMLSchema#string"
             }
         ],
         "http://www.w3.org/ns/shacl#minCount": [
@@ -33,7 +19,21 @@
         ]
     },
     {
-        "@id": "_:bcccdaaca37",
+        "@id": "_:bacf42bc495",
+        "http://www.w3.org/ns/shacl#minCount": [
+            {
+                "@value": "1",
+                "@type": "http://www.w3.org/2001/XMLSchema#integer"
+            }
+        ],
+        "http://www.w3.org/ns/shacl#path": [
+            {
+                "@id": "https://github.com/k00ni/dwm#classPath"
+            }
+        ]
+    },
+    {
+        "@id": "_:bd9da22b7fc",
         "http://www.w3.org/ns/shacl#minCount": [
             {
                 "@value": "1",
@@ -43,6 +43,31 @@
         "http://www.w3.org/ns/shacl#path": [
             {
                 "@id": "https://github.com/k00ni/dwm#requiredSteps"
+            }
+        ]
+    },
+    {
+        "@id": "https://github.com/k00ni/dwm#GenerateDBClassesFromKnowledge",
+        "@type": [
+            "https://github.com/k00ni/dwm#Process"
+        ],
+        "https://github.com/k00ni/dwm#classPath": [
+            {
+                "@value": "\\DWM\\Process\\GenerateDBClassesFromKnowledge"
+            }
+        ],
+        "https://github.com/k00ni/dwm#requiredSteps": [
+            {
+                "@value": "loadDwmJson"
+            },
+            {
+                "@value": "createGraphBasedOnMergedKnowledge"
+            },
+            {
+                "@value": "getDBRelatedClassesAndMetaData"
+            },
+            {
+                "@value": "generatePHPCode"
             }
         ]
     },
@@ -61,10 +86,13 @@
                 "@value": "loadDwmJson"
             },
             {
-                "@value": "collectKnowledgeFilepaths"
+                "@value": "deployRandomIdentifiersForBlankNodes"
             },
             {
                 "@value": "mergeIntoNTriples"
+            },
+            {
+                "@value": "mergeIntoJsonLD"
             }
         ]
     },
@@ -91,10 +119,10 @@
         ],
         "http://www.w3.org/ns/shacl#property": [
             {
-                "@id": "_:b30912e89e2"
+                "@id": "_:bacf42bc495"
             },
             {
-                "@id": "_:bcccdaaca37"
+                "@id": "_:bd9da22b7fc"
             }
         ],
         "http://www.w3.org/ns/shacl#targetClass": [
@@ -118,10 +146,10 @@
                 "@value": "loadDwmJson"
             },
             {
-                "@value": "readMergedKnowledge"
+                "@value": "createGraphBasedOnMergedKnowledge"
             },
             {
-                "@value": "collectProcessRelatedKnowledge"
+                "@value": "collectProcessClassPathAndRequiredSteps"
             },
             {
                 "@value": "checkClassExistence"
@@ -131,6 +159,9 @@
             },
             {
                 "@value": "checkThatProcessStepAmountIsEqual"
+            },
+            {
+                "@value": "generateReport"
             }
         ]
     },
@@ -168,7 +199,7 @@
         ],
         "http://www.w3.org/ns/shacl#property": [
             {
-                "@id": "_:ba2be4cc2ed"
+                "@id": "_:b1b3dc91285"
             }
         ],
         "http://www.w3.org/ns/shacl#targetClass": [

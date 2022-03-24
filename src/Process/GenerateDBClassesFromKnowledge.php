@@ -80,7 +80,7 @@ class GenerateDBClassesFromKnowledge extends Process
 
         $this->classConfig = array_map(function ($rdfEntry) {
             /** @var array<string,string|array<mixed>> */
-            $newEntry = ['className' => null, 'properties' => []];
+            $newEntry = [];
 
             /** @var \DWM\RDF\RDFEntry */
             $rdfEntry = $rdfEntry;
@@ -132,17 +132,13 @@ class GenerateDBClassesFromKnowledge extends Process
         $properties = $classConfig['properties'];
         // for each property also add getter and setter
         foreach ($properties as $property) {
-            $pos = strpos($property['datatype'], '#');
-            $pos = false === $pos ? 0 : $pos + 1;
-            $datatype = substr($property['datatype'], $pos);
-
             // property itself
-            $content[] = '    private '.$datatype.' $'.$property['propertyName'].';';
+            $content[] = '    private '.$property['datatype'].' $'.$property['propertyName'].';';
 
             // getter
             $content[] = '';
             $functionName = 'get'.ucfirst($property['propertyName']);
-            $content[] = '    public function '.$functionName.'(): '.$datatype;
+            $content[] = '    public function '.$functionName.'(): '.$property['datatype'];
             $content[] = '    {';
             $content[] = '        return $this->'.$property['propertyName'].';';
             $content[] = '    }';
@@ -150,7 +146,7 @@ class GenerateDBClassesFromKnowledge extends Process
             // setter
             $content[] = '';
             $functionName = 'set'.ucfirst($property['propertyName']);
-            $content[] = '    public function '.$functionName.'('.$datatype.' $value): void';
+            $content[] = '    public function '.$functionName.'('.$property['datatype'].' $value): void';
             $content[] = '    {';
             $content[] = '        $this->'.$property['propertyName'].' = $value;';
             $content[] = '    }';

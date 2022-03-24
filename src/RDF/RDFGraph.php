@@ -115,15 +115,26 @@ class RDFGraph implements Countable
                 } else {
                     $newEntry['propertyName'] = $this->getPropertyNameForId((string) $path);
 
-                    // datatype
                     foreach ([
-                        'sh:datatype' => 'datatype',
                         'sh:minCount' => 'minCount',
                         'sh:maxCount' => 'maxCount',
                     ] as $propertyId => $key) {
                         if ($rdfEntry->hasProperty($propertyId)) {
                             $newEntry[$key] = $rdfEntry->getPropertyValue($propertyId)->getIdOrValue();
                         }
+                    }
+
+                    // refine datatype, if set
+                    if ($rdfEntry->hasProperty('sh:datatype')) {
+                        // example: xsd:string
+                        /** @var string */
+                        $datatypeId = $rdfEntry->getPropertyValue('sh:datatype')->getIdOrValue();
+                        $newEntry['datatypeId'] = $datatypeId;
+
+                        // example: string
+                        $pos = strpos($newEntry['datatypeId'], '#');
+                        $pos = false === $pos ? 0 : $pos + 1;
+                        $newEntry['datatype'] = substr($newEntry['datatypeId'], $pos);
                     }
 
                     $propertyInfo[$newEntry['propertyName']] = $newEntry;

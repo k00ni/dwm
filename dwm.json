@@ -1,6 +1,7 @@
 {
-    "generateDBClassFiles": {
-        "path": "generatedDBClasses"
+    "generatedDBClassFiles": {
+        "path": "generatedDBClasses",
+        "phpNamespace": "DWM\\DBClass"
     },
     "jenaShaclBinFile": {
         "path": "/home/dwm/apache-jena/bin/shacl"

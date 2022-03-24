@@ -45,6 +45,9 @@ class RDFGraph implements Countable
         $this->rdfEntries[] = $rdfEntry;
     }
 
+    /**
+     * @see Countable
+     */
     public function count(): int
     {
         return count($this->rdfEntries);

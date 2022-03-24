@@ -20,6 +20,9 @@ final class DWMConfig
      */
     private string $dwmConfigFilename = 'dwm.json';
 
+    private ?string $generatedDBClassFilesPHPNamespace = null;
+    private ?string $generatedDBClassFilesPath = null;
+
     /**
      * A list of all files which are in one of the related knowledge folders.
      *
@@ -40,6 +43,16 @@ final class DWMConfig
     private string $prefix = 'https://github.com/k00ni/dwm#';
 
     private ?string $resultFolderPath = null;
+
+    public function getGeneratedDBClassFilesPath(): ?string
+    {
+        return $this->generatedDBClassFilesPath;
+    }
+
+    public function getGeneratedDBClassFilesPHPNamespace(): ?string
+    {
+        return $this->generatedDBClassFilesPHPNamespace;
+    }
 
     /**
      * @return array<string>
@@ -194,6 +207,28 @@ final class DWMConfig
             } else {
                 throw new Exception('Jena SHACL bin file not found: '.$pathToJenaShaclBinFile);
             }
+        }
+
+        /*
+         * generated DB classes
+         */
+        if (isset($data['generatedDBClassFiles'])) {
+            /** @var array<string,string> */
+            $generatedDBClassFiles = $data['generatedDBClassFiles'];
+
+            // path
+            /** @var string|null */
+            $generatedDBClassFilesPath = $generatedDBClassFiles['path'] ?? null;
+            if (is_string($generatedDBClassFilesPath) && file_exists($generatedDBClassFilesPath)) {
+                $this->generatedDBClassFilesPath = $generatedDBClassFilesPath;
+            } else {
+                throw new Exception('Path to generated DB class files not found: '.$generatedDBClassFilesPath);
+            }
+
+            // PHP namespace
+            /** @var string|null */
+            $generatedDBClassFilesPHPNamespace = $generatedDBClassFiles['phpNamespace'] ?? null;
+            $this->generatedDBClassFilesPHPNamespace = $generatedDBClassFilesPHPNamespace;
         }
     }
 }

@@ -1,0 +1,14 @@
+{
+    "@context": {
+        "dwm": "https://github.com/k00ni/dwm#"
+    },
+    "@id": "dwm:GenerateDBClassesFromKnowledge",
+    "@type": "dwm:Process",
+    "dwm:classPath": "\\\\DWM\\\\Process\\\\GenerateDBClassesFromKnowledge",
+    "dwm:requiredSteps": [
+        "loadDwmJson",
+        "createGraphBasedOnMergedKnowledge",
+        "getDBRelatedClassesAndMetaData",
+        "generatePHPCode"
+    ]
+}

@@ -159,6 +159,24 @@ final class RDFEntry
         throw new PropertyIdNotFoundException('Property ID not found: '.$expandedPropertyId);
     }
 
+    /**
+     * @return array<int,string|null>
+     */
+    public function getRawPropertyValues(string $propertyId): array
+    {
+        $expandedPropertyId = $this->namespaceHelper->expandId($propertyId);
+        if ($this->hasProperty($expandedPropertyId)) {
+            $result = [];
+            foreach ($this->propertyValues[$expandedPropertyId] as $value) {
+                $result[] = $value->getIdOrValue();
+            }
+
+            return $result;
+        }
+
+        throw new PropertyIdNotFoundException('Property ID not found: '.$expandedPropertyId);
+    }
+
     public function hasProperty(string $propertyId): bool
     {
         $expandedPropertyId = $this->namespaceHelper->expandId($propertyId);

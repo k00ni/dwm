@@ -69,9 +69,12 @@ class RunJenaShaclBin extends Process
         $output = (string) preg_replace('/\s+/', ' ', $output);
 
         if (str_contains($output, 'sh:conforms true') && 0 == $this->result) {
-            echo 'Run Jena SHACL bin: OK!';
+            $line = 'Run Jena SHACL bin: OK!';
+            echo "\033[42m".$line."\033[0m";
             echo PHP_EOL;
         } else {
+            $line = 'Run Jena SHACL bin: FAILED!';
+            echo "\033[41m".$line."\033[0m";
             echo $output;
         }
     }

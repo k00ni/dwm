@@ -32,4 +32,7 @@ RUN echo "html/index" >> /var/www/html/index.html
 RUN cd /home/dwm && wget -c https://dlcdn.apache.org/jena/binaries/apache-jena-4.4.0.tar.gz -O - | tar -xz
 RUN mv /home/dwm/apache-jena-4.4.0 /home/dwm/apache-jena
 
-CMD ["tail -f /dev/null"]
+COPY ./includes/run.sh /run.sh
+RUN chmod +x /run.sh
+
+CMD ["/run.sh"]

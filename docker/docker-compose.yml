@@ -1,0 +1,44 @@
+version: '3'
+
+services:
+    dwm:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: dwm
+        volumes:
+            - ./../:/var/www/html/
+        depends_on:
+            - db
+        links:
+          - db:mysql
+
+    db:
+        image: mariadb:10.3
+        container_name: db
+        environment:
+            MYSQL_DATABASE: dwm
+            MYSQL_ROOT_PASSWORD: Pass123
+        volumes:
+            # server is empty at the start because it uses RAM to store data
+            - data:/var/cache
+            - data:/var/lib/mysql
+
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin
+        container_name: phpmyadmin
+        links:
+            - db:mysql
+        ports:
+            - 8022:80
+        environment:
+            MYSQL_USERNAME: root
+            MYSQL_ROOT_PASSWORD: Pass123
+            PMA_HOST: mysql
+            UPLOAD_LIMIT: 1G
+
+volumes:
+    data:
+        driver_opts:
+            type: tmpfs
+            device: tmpfs

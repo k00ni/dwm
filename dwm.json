@@ -3,6 +3,12 @@
         "path": "generatedDBClasses",
         "phpNamespace": "DWM\\DBClass"
     },
+    "generateKnowledgeBasedOnDatabaseTables": {
+        "fileWithAccessData": "dbAccess.json",
+        "knowledgeFolder": "knowledge/examples",
+        "defaultNamespacePrefix": "dwm",
+        "defaultNamespaceUri": "https://github.com/k00ni/dwm#"
+    },
     "jenaShaclBinFile": {
         "path": "/home/dwm/apache-jena/bin/shacl"
     },

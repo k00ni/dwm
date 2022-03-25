@@ -3,7 +3,7 @@ FROM php:8.0-cli
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl git libzip-dev nano net-tools openjdk-17-jre sudo unzip wget zlib1g-dev
 
-RUN docker-php-ext-install zip && docker-php-ext-enable zip
+RUN docker-php-ext-install pdo pdo_mysql zip && docker-php-ext-enable zip
 
 # uncomment if code coverage is required
 # RUN pecl install xdebug && docker-php-ext-enable xdebug

@@ -20,6 +20,13 @@ final class DWMConfig
      */
     private string $dwmConfigFilename = 'dwm.json';
 
+    private ?string $defaultNamespacePrefixForKnowledgeBasedOnDatabaseTables = null;
+    private ?string $defaultNamespaceUriForKnowledgeBasedOnDatabaseTables = null;
+
+    private ?string $fileWithDatabaseAccessData = null;
+
+    private ?string $folderPathForKnowledgeBasedOnDatabaseTables = null;
+
     private ?string $generatedDBClassFilesPHPNamespace = null;
     private ?string $generatedDBClassFilesPath = null;
 
@@ -43,6 +50,26 @@ final class DWMConfig
     private string $prefix = 'https://github.com/k00ni/dwm#';
 
     private ?string $resultFolderPath = null;
+
+    public function getDefaultNamespacePrefixForKnowledgeBasedOnDatabaseTables(): ?string
+    {
+        return $this->defaultNamespacePrefixForKnowledgeBasedOnDatabaseTables;
+    }
+
+    public function getDefaultNamespaceUriForKnowledgeBasedOnDatabaseTables(): ?string
+    {
+        return $this->defaultNamespaceUriForKnowledgeBasedOnDatabaseTables;
+    }
+
+    public function getFileWithDatabaseAccessData(): ?string
+    {
+        return $this->fileWithDatabaseAccessData;
+    }
+
+    public function getFolderPathForKnowledgeBasedOnDatabaseTables(): ?string
+    {
+        return $this->folderPathForKnowledgeBasedOnDatabaseTables;
+    }
 
     public function getGeneratedDBClassFilesPath(): ?string
     {
@@ -229,6 +256,42 @@ final class DWMConfig
             /** @var string|null */
             $generatedDBClassFilesPHPNamespace = $generatedDBClassFiles['phpNamespace'] ?? null;
             $this->generatedDBClassFilesPHPNamespace = $generatedDBClassFilesPHPNamespace;
+        }
+
+        /*
+         * generateKnowledgeBasedOnDatabaseTables
+         */
+        if (isset($data['generateKnowledgeBasedOnDatabaseTables'])) {
+            /** @var array<string,string> */
+            $genKnowledgeDatabaseTables = $data['generateKnowledgeBasedOnDatabaseTables'];
+
+            // access data file
+            /** @var string|null */
+            $fileWithAccessData = $genKnowledgeDatabaseTables['fileWithAccessData'] ?? null;
+            if (is_string($fileWithAccessData) && file_exists($fileWithAccessData)) {
+                $this->fileWithDatabaseAccessData = $fileWithAccessData;
+            } else {
+                throw new Exception('Path to access file not found: '.$fileWithAccessData);
+            }
+
+            // knowledge folder for new files
+            /** @var string|null */
+            $folderPathForKnowledgeBasedOnDatabaseTables = $genKnowledgeDatabaseTables['knowledgeFolder'] ?? null;
+            if (is_string($folderPathForKnowledgeBasedOnDatabaseTables) && file_exists($folderPathForKnowledgeBasedOnDatabaseTables)) {
+                $this->folderPathForKnowledgeBasedOnDatabaseTables = $folderPathForKnowledgeBasedOnDatabaseTables;
+            } else {
+                $msg = 'Path to knowledge folder for generate knowledge not found: '.$folderPathForKnowledgeBasedOnDatabaseTables;
+                throw new Exception($msg);
+            }
+
+            // default namespace prefix + URI
+            /** @var string|null */
+            $defaultNamespacePrefixForKnowledgeBasedOnDatabaseTables = $genKnowledgeDatabaseTables['defaultNamespacePrefix'] ?? null;
+            $this->defaultNamespacePrefixForKnowledgeBasedOnDatabaseTables = $defaultNamespacePrefixForKnowledgeBasedOnDatabaseTables;
+
+            /** @var string|null */
+            $defaultNamespaceUriForKnowledgeBasedOnDatabaseTables = $genKnowledgeDatabaseTables['defaultNamespaceUri'] ?? null;
+            $this->defaultNamespaceUriForKnowledgeBasedOnDatabaseTables = $defaultNamespaceUriForKnowledgeBasedOnDatabaseTables;
         }
     }
 }

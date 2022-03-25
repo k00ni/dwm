@@ -1,0 +1,9 @@
+#!/usr/bin/env php
+<?php
+
+use DWM\DWMConfig;
+use DWM\Process\GenerateKnowledgeBasedOnDBTables;
+
+require $_composer_autoload_path ?? __DIR__ . '/../vendor/autoload.php';
+
+return (new GenerateKnowledgeBasedOnDBTables(new DWMConfig()))->doSteps()->getResult();

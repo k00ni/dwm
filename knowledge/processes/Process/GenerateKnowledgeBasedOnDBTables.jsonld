@@ -1,0 +1,14 @@
+{
+    "@context": {
+        "dwm": "https://github.com/k00ni/dwm#"
+    },
+    "@id": "dwm:GenerateKnowledgeBasedOnDBTables",
+    "@type": "dwm:Process",
+    "dwm:classPath": "\\\\DWM\\\\Process\\\\GenerateKnowledgeBasedOnDBTables",
+    "dwm:requiredSteps": [
+        "loadDwmJson",
+        "loadTableInformation",
+        "createKnowledgeEntries",
+        "createKnowledgeFiles"
+    ]
+}

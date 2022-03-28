@@ -10,6 +10,10 @@ namespace DWM\DBClass;
  */
 class Person
 {
+    /**
+     * @dwm-type-id http://www.w3.org/2001/XMLSchema#string
+     * @dwm-type string
+     */
     private string $givenName;
 
     public function getGivenName(): string
@@ -21,4 +25,5 @@ class Person
     {
         $this->givenName = $value;
     }
+
 }

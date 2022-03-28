@@ -92,9 +92,13 @@ class GenerateKnowledgeBasedOnDBTables extends Process
             $newEntry['tableName'] = $tableName;
 
             // table itself
-            $newEntry['describeResult'] = $this->connection->fetchAllAssociative('DESCRIBE '.$tableName);
+            $newEntry['describeResult'] = $this->connection->fetchAllAssociative('DESCRIBE `'.$tableName.'`');
 
-            // foreign key information
+            /*
+             * foreign key information
+             *
+             * get information about other tables which reference this table
+             */
             $sql = 'SELECT TABLE_NAME, COLUMN_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
                       FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
                      WHERE REFERENCED_TABLE_SCHEMA = ? AND REFERENCED_TABLE_NAME = ?;';
@@ -110,36 +114,43 @@ class GenerateKnowledgeBasedOnDBTables extends Process
     }
 
     /**
-     * @param array<string,string> $propertyArr
+     * @param array<string,string|null> $propertyArr
      *
-     * @return array<string,string>
+     * @return array<string,string|bool|int>
      */
     private function getPropertyInformation(array $propertyArr): array
     {
         $newProperty = [];
 
-        $newProperty['propertyName'] = $this->snakeStyleToCamelStyle($propertyArr['Field']);
+        $newProperty['propertyName'] = $this->snakeStyleToCamelStyle((string) $propertyArr['Field']);
 
         // if NULL is not allowed => minCount == 1
         if ('NO' == $propertyArr['Null']) {
-            $newProperty['minCount'] = '1';
+            $newProperty['minCount'] = 1;
         }
 
         // handle: varchar(255)
-        if (str_contains($propertyArr['Type'], 'varchar(')) {
+        if (str_contains((string) $propertyArr['Type'], 'varchar(')) {
             // name
             $newProperty['typeId'] = 'xsd:string';
 
             // max length
-            $newProperty['maxLength'] = str_replace('varchar(', '', $propertyArr['Type']);
+            $newProperty['maxLength'] = str_replace('varchar(', '', (string) $propertyArr['Type']);
             $newProperty['maxLength'] = str_replace(')', '', $newProperty['maxLength']);
-        } elseif (str_contains($propertyArr['Type'], 'int(')) {
+        } elseif (str_contains((string) $propertyArr['Type'], 'int(')) {
             // name
             $newProperty['typeId'] = 'xsd:integer';
 
             // max length
-            $newProperty['maxLength'] = str_replace('int(', '', $propertyArr['Type']);
+            $newProperty['maxLength'] = str_replace('int(', '', (string) $propertyArr['Type']);
             $newProperty['maxLength'] = str_replace(')', '', $newProperty['maxLength']);
+        } elseif (str_contains((string) $propertyArr['Type'], 'decimal(')) {
+            // name
+            $newProperty['typeId'] = 'xsd:double';
+
+            preg_match('/\(([0-9]+),([0-9]+)\)/smi', (string) $propertyArr['Type'], $match);
+            $newProperty['precision'] = $match[1];
+            $newProperty['scale'] = $match[2];
         } elseif ('date' == $propertyArr['Type']) {
             // name
             $newProperty['typeId'] = 'xsd:date';
@@ -152,8 +163,28 @@ class GenerateKnowledgeBasedOnDBTables extends Process
         } elseif ('longtext' == $propertyArr['Type']) {
             // name
             $newProperty['typeId'] = 'xsd:string';
+        } elseif ('text' == $propertyArr['Type']) {
+            // name
+            $newProperty['typeId'] = 'xsd:string';
         } else {
             throw new Exception('Unknown MySQL field type given: '.$propertyArr['Type']);
+        }
+
+        /*
+         * default
+         */
+        if (null !== $propertyArr['Default']) {
+            $newProperty['defaultValue'] = $propertyArr['Default'];
+        }
+
+        /*
+         * key infos
+         */
+        if ('PRI' == $propertyArr['Key']) {
+            $newProperty['dbIsPrimaryKey'] = true;
+        }
+        if ('auto_increment' == $propertyArr['Extra']) {
+            $newProperty['dbIsAutoIncrement'] = true;
         }
 
         return $newProperty;
@@ -188,6 +219,18 @@ class GenerateKnowledgeBasedOnDBTables extends Process
                 $newEntry['properties'][] = $this->getPropertyInformation($propertyArr);
             }
 
+            // relations (1-1, 1-n, n-m relations)
+            $newEntry['relations'] = [];
+            /** @var array<int,array<string,string>> */
+            $foreignKeyInfoList = $tableInfo['foreignKeyInformation'];
+            foreach ($foreignKeyInfoList as $foreignKeyInfo) {
+                $newEntry['relations'][] = [
+                    'relatedTable' => $foreignKeyInfo['TABLE_NAME'],
+                    'fieldNameInRelatedTable' => $foreignKeyInfo['COLUMN_NAME'],
+                    'fieldNameInThisTable' => $foreignKeyInfo['REFERENCED_COLUMN_NAME'],
+                ];
+            }
+
             return $newEntry;
         }, $this->tableInformation);
     }
@@ -206,7 +249,7 @@ class GenerateKnowledgeBasedOnDBTables extends Process
             // context
             $data['@context'] = [
                 $prefix => $prefixUri,
-                'dwm' => 'https://gi$thub.com/k00ni/dwm#',
+                'dwm' => 'https://github.com/k00ni/dwm#',
                 'rdfs' => 'http://www.w3.org/2000/01/rdf-schema#',
                 'schema' => 'https://schema.org/',
                 'sh' => 'http://www.w3.org/ns/shacl#',
@@ -237,6 +280,8 @@ class GenerateKnowledgeBasedOnDBTables extends Process
 
             /** @var array<array<string,string>> */
             $properties = $knowledgeEntry['properties'];
+            /** @var array<array<string,string>> */
+            $propertyIdToName = [];
             // add property information to shape
             foreach ($properties as $property) {
                 /** @var array<string,string> */
@@ -244,23 +289,59 @@ class GenerateKnowledgeBasedOnDBTables extends Process
                 $newEntry = [];
 
                 // sh:path
-                $newEntry['sh:path'] = ['@id' => $prefix.':'.$property['propertyName']];
+                $propertyId = $prefix.':'.$property['propertyName'];
+                $newEntry['sh:path'] = ['@id' => $propertyId];
+                $propertyIdToName[$propertyId] = $property['propertyName'];
 
                 // sh:datatype
                 $newEntry['sh:datatype'] = ['@id' => $property['typeId']];
 
                 // sh:minCount
                 if (isset($property['minCount'])) {
-                    $newEntry['sh:minCount'] = (int) $property['minCount'];
+                    $newEntry['sh:minCount'] = $property['minCount'];
+                }
+
+                foreach (['dbIsPrimaryKey', 'dbIsAutoIncrement', 'defaultValue'] as $key) {
+                    if (isset($property[$key])) {
+                        $newEntry['dwm:'.$key] = $property[$key];
+                    }
                 }
 
                 $shape['sh:property'][] = $newEntry;
             }
             $data['@graph'][] = $shape;
 
-            // pretty print and put into a file
-            $data = json_encode($data, JSON_PRETTY_PRINT);
-            if (false === $data) {
+            /*
+             * property names
+             */
+            foreach ($propertyIdToName as $propertyId => $propertyName) {
+                $data['@graph'][] = [
+                    '@id' => $propertyId,
+                    'dwm:propertyName' => $propertyName,
+                ];
+            }
+
+            /*
+             * add relational information
+             */
+            /** @var array<mixed> */
+            $relations = $knowledgeEntry['relations'];
+            foreach ($relations as $relation) {
+                /** @var array<string,string> */
+                $relation = $relation;
+                /** @var string */
+                $relatedTable = $relation['relatedTable'];
+                /** @var string */
+                $fieldNameInRelatedTable = $relation['fieldNameInRelatedTable'];
+                /** @var string */
+                $fieldNameInThisTable = $relation['fieldNameInThisTable'];
+            }
+
+            /*
+             * pretty print and put into a file
+             */
+            $data = json_encode($data, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_IGNORE);
+            if (false == $data) {
                 throw new Exception('Could not JSON encode $data.');
             } else {
                 $file = $this->dwmConfig->getFolderPathForKnowledgeBasedOnDatabaseTables().'/';

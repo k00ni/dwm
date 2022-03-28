@@ -103,6 +103,33 @@ class GenerateDBClassesFromKnowledge extends Process
     }
 
     /**
+     * @param array<string,string> $property
+     */
+    private function toPHPType(array $property): string
+    {
+        $prefix = '';
+        if (isset($property['minCount']) && 0 == (int) $property['minCount']) {
+            $prefix = '?';
+        }
+
+        if ('integer' == $property['datatype']) {
+            return $prefix.'int';
+        } elseif ('double' == $property['datatype']) {
+            return $prefix.'float';
+        } elseif ('boolean' == $property['datatype']) {
+            return $prefix.'bool';
+        } elseif ('string' == $property['datatype']) {
+            return $prefix.'string';
+        } elseif ('date' == $property['datatype']) {
+            return $prefix.'\DateTime';
+        } elseif ('dateTime' == $property['datatype']) {
+            return $prefix.'\DateTime';
+        } else {
+            throw new Exception('Unknown type given: '.$property['datatype']);
+        }
+    }
+
+    /**
      * @param array<mixed> $classConfig
      */
     private function createFileContent(array $classConfig): string
@@ -130,15 +157,24 @@ class GenerateDBClassesFromKnowledge extends Process
 
         /** @var array<array<string,string>> */
         $properties = $classConfig['properties'];
+        foreach ($properties as $property) {
+            $phpType = $this->toPHPType($property);
+            // property itself
+            $content[] = '    /**';
+            $content[] = '     * @dwm-type-id '.$property['datatypeId'];
+            $content[] = '     * @dwm-type '.$property['datatype'];
+            $content[] = '     */';
+            $content[] = '    private '.$phpType.' $'.$property['propertyName'].';';
+            $content[] = '';
+        }
+
         // for each property also add getter and setter
         foreach ($properties as $property) {
-            // property itself
-            $content[] = '    private '.$property['datatype'].' $'.$property['propertyName'].';';
+            $phpType = $this->toPHPType($property);
 
             // getter
-            $content[] = '';
             $functionName = 'get'.ucfirst($property['propertyName']);
-            $content[] = '    public function '.$functionName.'(): '.$property['datatype'];
+            $content[] = '    public function '.$functionName.'(): '.$phpType;
             $content[] = '    {';
             $content[] = '        return $this->'.$property['propertyName'].';';
             $content[] = '    }';
@@ -146,10 +182,11 @@ class GenerateDBClassesFromKnowledge extends Process
             // setter
             $content[] = '';
             $functionName = 'set'.ucfirst($property['propertyName']);
-            $content[] = '    public function '.$functionName.'('.$property['datatype'].' $value): void';
+            $content[] = '    public function '.$functionName.'('.$phpType.' $value): void';
             $content[] = '    {';
             $content[] = '        $this->'.$property['propertyName'].' = $value;';
             $content[] = '    }';
+            $content[] = '';
         }
 
         $content[] = '}';

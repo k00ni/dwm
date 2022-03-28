@@ -135,6 +135,9 @@ class RDFGraph implements Countable
                         $pos = strpos($newEntry['datatypeId'], '#');
                         $pos = false === $pos ? 0 : $pos + 1;
                         $newEntry['datatype'] = substr($newEntry['datatypeId'], $pos);
+                    } elseif ($rdfEntry->hasProperty('dwm:datatype')) {
+                        $newEntry['isListOfObjects'] = true;
+                        $newEntry['objectsOfType'] = $rdfEntry->getPropertyValue('dwm:datatype')->getIdOrValue();
                     }
 
                     $propertyInfo[$newEntry['propertyName']] = $newEntry;

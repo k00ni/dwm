@@ -309,17 +309,6 @@ class GenerateKnowledgeBasedOnDBTables extends Process
 
                 $shape['sh:property'][] = $newEntry;
             }
-            $data['@graph'][] = $shape;
-
-            /*
-             * property names
-             */
-            foreach ($propertyIdToName as $propertyId => $propertyName) {
-                $data['@graph'][] = [
-                    '@id' => $propertyId,
-                    'dwm:propertyName' => $propertyName,
-                ];
-            }
 
             /*
              * add relational information
@@ -335,6 +324,32 @@ class GenerateKnowledgeBasedOnDBTables extends Process
                 $fieldNameInRelatedTable = $relation['fieldNameInRelatedTable'];
                 /** @var string */
                 $fieldNameInThisTable = $relation['fieldNameInThisTable'];
+
+                $newEntry = [];
+
+                $propertyName = $this->snakeStyleToCamelStyle($relatedTable).'List';
+                $propertyId = $prefix.':'.$propertyName;
+
+                $newEntry['sh:path'] = ['@id' => $propertyId];
+                $propertyIdToName[$propertyId] = $propertyName;
+
+                $newEntry['dwm:fieldNameInRelatedTable'] = $fieldNameInRelatedTable;
+                $newEntry['dwm:fieldNameInThisTable'] = $fieldNameInThisTable;
+                $newEntry['dwm:datatype'] = ucfirst($this->snakeStyleToCamelStyle($relatedTable)).'[]';
+
+                $shape['sh:property'][] = $newEntry;
+            }
+
+            $data['@graph'][] = $shape;
+
+            /*
+             * property names
+             */
+            foreach ($propertyIdToName as $propertyId => $propertyName) {
+                $data['@graph'][] = [
+                    '@id' => $propertyId,
+                    'dwm:propertyName' => $propertyName,
+                ];
             }
 
             /*

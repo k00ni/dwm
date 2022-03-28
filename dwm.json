@@ -4,7 +4,7 @@
         "phpNamespace": "DWM\\DBClass"
     },
     "generateKnowledgeBasedOnDatabaseTables": {
-        "fileWithAccessData": "dbAccess.json",
+        "fileWithAccessData": "dbAccess.php",
         "knowledgeFolder": "knowledge/examples",
         "defaultNamespacePrefix": "dwm",
         "defaultNamespaceUri": "https://github.com/k00ni/dwm#"

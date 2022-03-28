@@ -14,6 +14,7 @@ use Exception;
 class GenerateKnowledgeBasedOnDBTables extends Process
 {
     private Connection $connection;
+    private bool $createFiles;
 
     private string $currentPath;
 
@@ -31,7 +32,7 @@ class GenerateKnowledgeBasedOnDBTables extends Process
      */
     private array $tableInformation;
 
-    public function __construct(DWMConfig $dwmConfig)
+    public function __construct(DWMConfig $dwmConfig, bool $createFiles)
     {
         parent::__construct();
 
@@ -50,6 +51,7 @@ class GenerateKnowledgeBasedOnDBTables extends Process
 
         $this->addStep('createKnowledgeFiles');
 
+        $this->createFiles = $createFiles;
         $this->dwmConfig = $dwmConfig;
     }
 
@@ -58,24 +60,11 @@ class GenerateKnowledgeBasedOnDBTables extends Process
     {
         $this->dwmConfig->load($this->currentPath);
 
-        if (is_string($this->dwmConfig->getFileWithDatabaseAccessData())) {
-            $accessData = file_get_contents($this->dwmConfig->getFileWithDatabaseAccessData());
+        $accessData = $this->dwmConfig->getGenerateKnowledgeBasedOnDatabaseTablesAccessData();
 
-            if (is_string($accessData)) {
-                /** @var array<string,string> */
-                $accessDataArr = json_decode($accessData, true);
-                $accessDataArr['driver'] = 'pdo_mysql';
+        $this->connection = DriverManager::getConnection($accessData);
 
-                $this->database = $accessDataArr['dbname'];
-
-                // DB access
-                $this->connection = DriverManager::getConnection($accessDataArr);
-            } else {
-                throw new Exception('Could not open access data file: '.$this->dwmConfig->getFileWithDatabaseAccessData());
-            }
-        } else {
-            throw new Exception('No information found about database access file in dwm.json.');
-        }
+        $this->database = $accessData['dbname'];
     }
 
     #[ProcessStep()]
@@ -241,10 +230,10 @@ class GenerateKnowledgeBasedOnDBTables extends Process
         $prefix = $this->dwmConfig->getDefaultNamespacePrefixForKnowledgeBasedOnDatabaseTables();
         $prefixUri = $this->dwmConfig->getDefaultNamespaceUriForKnowledgeBasedOnDatabaseTables();
 
-        array_map(function ($knowledgeEntry) use ($prefix, $prefixUri) {
+        $data = [];
+        array_map(function ($knowledgeEntry) use (&$data, $prefix, $prefixUri) {
             /** @var array<mixed> */
             $knowledgeEntry = $knowledgeEntry;
-            $data = [];
 
             // context
             $data['@context'] = [
@@ -355,17 +344,21 @@ class GenerateKnowledgeBasedOnDBTables extends Process
             /*
              * pretty print and put into a file
              */
-            $data = json_encode($data, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_IGNORE);
-            if (false == $data) {
-                throw new Exception('Could not JSON encode $data.');
-            } else {
-                $file = $this->dwmConfig->getFolderPathForKnowledgeBasedOnDatabaseTables().'/';
+            if ($this->createFiles) {
+                $data = json_encode($data, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_IGNORE);
+                if (false == $data) {
+                    throw new Exception('Could not JSON encode $data.');
+                } else {
+                    $file = $this->dwmConfig->getFolderPathForKnowledgeBasedOnDatabaseTables().'/';
 
-                /** @var string */
-                $filename = $knowledgeEntry['fileName'];
-                $file .= $filename;
-                file_put_contents($file, $data);
+                    /** @var string */
+                    $filename = $knowledgeEntry['fileName'];
+                    $file .= $filename;
+                    file_put_contents($file, $data);
+                }
             }
         }, $this->knowledgeEntries);
+
+        $this->result = $data;
     }
 }

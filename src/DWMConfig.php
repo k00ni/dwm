@@ -13,7 +13,7 @@ use RecursiveIteratorIterator;
  * This class was created to avoid messy type-hint operations on array structures.
  * It helps to keep a clean code base and avoid PHPStan issues, especially in cases where the schema changes.
  */
-final class DWMConfig
+class DWMConfig
 {
     /**
      * @todo move to JSONLD
@@ -24,6 +24,7 @@ final class DWMConfig
     private ?string $defaultNamespaceUriForKnowledgeBasedOnDatabaseTables = null;
 
     private ?string $fileWithDatabaseAccessData = null;
+    private ?array $generateKnowledgeBasedOnDatabaseTablesAccessData = null;
 
     private ?string $folderPathForKnowledgeBasedOnDatabaseTables = null;
 
@@ -79,6 +80,14 @@ final class DWMConfig
     public function getGeneratedDBClassFilesPHPNamespace(): ?string
     {
         return $this->generatedDBClassFilesPHPNamespace;
+    }
+
+    /**
+     * @return array<string,string>
+     */
+    public function getGenerateKnowledgeBasedOnDatabaseTablesAccessData(): ?array
+    {
+        return $this->generateKnowledgeBasedOnDatabaseTablesAccessData;
     }
 
     /**
@@ -269,7 +278,10 @@ final class DWMConfig
             /** @var string|null */
             $fileWithAccessData = $genKnowledgeDatabaseTables['fileWithAccessData'] ?? null;
             if (is_string($fileWithAccessData) && file_exists($fileWithAccessData)) {
-                $this->fileWithDatabaseAccessData = $fileWithAccessData;
+                $accessData = (array) require $fileWithAccessData;
+                $accessData['driver'] = 'pdo_mysql';
+
+                $this->generateKnowledgeBasedOnDatabaseTablesAccessData = $accessData;
             } else {
                 throw new Exception('Path to access file not found: '.$fileWithAccessData);
             }

@@ -23,6 +23,8 @@ services:
             # server is empty at the start because it uses RAM to store data
             - data:/var/cache
             - data:/var/lib/mysql
+            # for SQL commands to be run after the server starts
+            - ./sql:/docker-entrypoint-initdb.d
 
     phpmyadmin:
         image: phpmyadmin/phpmyadmin

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'CREATE TABLE user (
+    'CREATE TABLE User (
         id INT AUTO_INCREMENT NOT NULL,
         some_id INT NOT NULL,
         some_varchar VARCHAR(100) DEFAULT "default 1" NOT NULL,
@@ -16,15 +16,15 @@ return [
         INDEX INDEX2 (some_varchar),
         PRIMARY KEY(id)
     ) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_520_ci` ENGINE = InnoDB;',
-    'CREATE UNIQUE INDEX UNIQUE1 ON user (some_smallint);',
-    'CREATE TABLE address (
+    'CREATE UNIQUE INDEX UNIQUE1 ON User (some_smallint);',
+    'CREATE TABLE Address (
         id INT AUTO_INCREMENT NOT NULL,
         street VARCHAR(100) NOT NULL,
         house_nr SMALLINT NOT NULL,
         PRIMARY KEY(id)
     ) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_520_ci` ENGINE = InnoDB;',
-    'ALTER TABLE user ADD CONSTRAINT CONSTRAINT1
+    'ALTER TABLE User ADD CONSTRAINT CONSTRAINT1
         FOREIGN KEY (address_id)
-        REFERENCES address (id)
+        REFERENCES Address (id)
         ON DELETE CASCADE;',
 ];

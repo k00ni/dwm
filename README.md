@@ -14,6 +14,10 @@ With this tool set and methods we want to achieve the following goals:
 
 In the following areas knowledge can aid software development.
 
+### Put knowledge-like information in JSON-LD files
+
+Use JSON-LD to model your knowledge ([compact form](https://www.w3.org/TR/json-ld11-api/#compaction)).
+
 ### Organize operations in processes
 
 Instead of putting the majority of your code inside a set of classes (OOP-Style), organize it as processes (more like imperative programming).

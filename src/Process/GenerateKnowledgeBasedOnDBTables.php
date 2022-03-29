@@ -22,6 +22,8 @@ class GenerateKnowledgeBasedOnDBTables extends Process
 
     private DWMConfig $dwmConfig;
 
+    private array $foreignKeyInformation = [];
+
     /**
      * @var array<mixed>
      */
@@ -88,10 +90,38 @@ class GenerateKnowledgeBasedOnDBTables extends Process
              *
              * get information about other tables which reference this table
              */
-            $sql = 'SELECT TABLE_NAME, COLUMN_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
+            $sql = 'SELECT *
                       FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
                      WHERE REFERENCED_TABLE_SCHEMA = ? AND REFERENCED_TABLE_NAME = ?;';
-            $newEntry['foreignKeyInformation'] = $this->connection->fetchAllAssociative($sql, [$this->database, $tableName]);
+            $foreignKeyInformations = $this->connection->fetchAllAssociative(
+                $sql,
+                [$this->database, $tableName]
+            );
+
+            foreach ($foreignKeyInformations as $info) {
+                /** @var array<string,string> */
+                $info = $info;
+
+                // information received will be put on the referenced table
+                $infoTableName = $info['TABLE_NAME'];
+                $newForeignKeyInfo = [
+                    'constraintName' => $info['CONSTRAINT_NAME'],
+                    'constraintColumnName' => $info['COLUMN_NAME'],
+                    'constraintReferencedTable' => $info['REFERENCED_TABLE_NAME'],
+                    'constraintReferencedTableColumnName' => $info['REFERENCED_COLUMN_NAME'],
+                ];
+
+                // load further constraint information
+                $sql = 'SELECT *
+                          FROM information_schema.REFERENTIAL_CONSTRAINTS
+                         WHERE CONSTRAINT_SCHEMA = ? AND CONSTRAINT_NAME = ?';
+                $constraint = $this->connection->fetchAssociative($sql, [$this->database, $info['CONSTRAINT_NAME']]);
+
+                $newForeignKeyInfo['constraintUpdateRule'] = $constraint['UPDATE_RULE'];
+                $newForeignKeyInfo['constraintDeleteRule'] = $constraint['DELETE_RULE'];
+
+                $this->foreignKeyInformation[$infoTableName.'_'.$info['COLUMN_NAME']] = $newForeignKeyInfo;
+            }
 
             return $newEntry;
         }, $tables);
@@ -111,11 +141,17 @@ class GenerateKnowledgeBasedOnDBTables extends Process
     {
         $newProperty = [];
 
+        $newProperty['propertyNameInDb'] = (string) $propertyArr['Field'];
         $newProperty['propertyName'] = $this->snakeStyleToCamelStyle((string) $propertyArr['Field']);
 
         // if NULL is not allowed => minCount == 1
         if ('NO' == $propertyArr['Null']) {
             $newProperty['minCount'] = 1;
+        }
+
+        // default
+        if (null !== $propertyArr['Default']) {
+            $newProperty['defaultValue'] = $propertyArr['Default'];
         }
 
         // handle: varchar(255)
@@ -205,19 +241,17 @@ class GenerateKnowledgeBasedOnDBTables extends Process
             foreach ($describeResult as $propertyArr) {
                 /** @var array<string,string> */
                 $propertyArr = $propertyArr;
-                $newEntry['properties'][] = $this->getPropertyInformation($propertyArr);
-            }
+                $newProperty = $this->getPropertyInformation($propertyArr);
 
-            // relations (1-1, 1-n, n-m relations)
-            $newEntry['relations'] = [];
-            /** @var array<int,array<string,string>> */
-            $foreignKeyInfoList = $tableInfo['foreignKeyInformation'];
-            foreach ($foreignKeyInfoList as $foreignKeyInfo) {
-                $newEntry['relations'][] = [
-                    'relatedTable' => $foreignKeyInfo['TABLE_NAME'],
-                    'fieldNameInRelatedTable' => $foreignKeyInfo['COLUMN_NAME'],
-                    'fieldNameInThisTable' => $foreignKeyInfo['REFERENCED_COLUMN_NAME'],
-                ];
+                // add foreign key information if set
+                $key = $tableName.'_'.$newProperty['propertyNameInDb'];
+                if (isset($this->foreignKeyInformation[$key])) {
+                    foreach ($this->foreignKeyInformation[$key] as $key => $value) {
+                        $newProperty[$key] = $value;
+                    }
+                }
+
+                $newEntry['properties'][] = $newProperty;
             }
 
             return $newEntry;
@@ -271,6 +305,8 @@ class GenerateKnowledgeBasedOnDBTables extends Process
             $properties = $knowledgeEntry['properties'];
             /** @var array<array<string,string>> */
             $propertyIdToName = [];
+            /** @var array<string,array<string,string>> */
+            $propertyIndex = [];
             // add property information to shape
             foreach ($properties as $property) {
                 /** @var array<string,string> */
@@ -280,7 +316,6 @@ class GenerateKnowledgeBasedOnDBTables extends Process
                 // sh:path
                 $propertyId = $prefix.':'.$property['propertyName'];
                 $newEntry['sh:path'] = ['@id' => $propertyId];
-                $propertyIdToName[$propertyId] = $property['propertyName'];
 
                 // sh:datatype
                 $newEntry['sh:datatype'] = ['@id' => $property['typeId']];
@@ -290,41 +325,25 @@ class GenerateKnowledgeBasedOnDBTables extends Process
                     $newEntry['sh:minCount'] = $property['minCount'];
                 }
 
-                foreach (['dbIsPrimaryKey', 'dbIsAutoIncrement', 'defaultValue'] as $key) {
+                foreach ([
+                    'dbIsPrimaryKey',
+                    'dbIsAutoIncrement',
+                    'defaultValue',
+                    // foreign key related
+                    'constraintName',
+                    'constraintColumnName',
+                    'constraintReferencedTable',
+                    'constraintReferencedTableColumnName',
+                    'constraintUpdateRule',
+                    'constraintDeleteRule',
+                ] as $key) {
                     if (isset($property[$key])) {
                         $newEntry['dwm:'.$key] = $property[$key];
                     }
                 }
 
-                $shape['sh:property'][] = $newEntry;
-            }
-
-            /*
-             * add relational information
-             */
-            /** @var array<mixed> */
-            $relations = $knowledgeEntry['relations'];
-            foreach ($relations as $relation) {
-                /** @var array<string,string> */
-                $relation = $relation;
-                /** @var string */
-                $relatedTable = $relation['relatedTable'];
-                /** @var string */
-                $fieldNameInRelatedTable = $relation['fieldNameInRelatedTable'];
-                /** @var string */
-                $fieldNameInThisTable = $relation['fieldNameInThisTable'];
-
-                $newEntry = [];
-
-                $propertyName = $this->snakeStyleToCamelStyle($relatedTable).'List';
-                $propertyId = $prefix.':'.$propertyName;
-
-                $newEntry['sh:path'] = ['@id' => $propertyId];
-                $propertyIdToName[$propertyId] = $propertyName;
-
-                $newEntry['dwm:fieldNameInRelatedTable'] = $fieldNameInRelatedTable;
-                $newEntry['dwm:fieldNameInThisTable'] = $fieldNameInThisTable;
-                $newEntry['dwm:datatype'] = ucfirst($this->snakeStyleToCamelStyle($relatedTable)).'[]';
+                $propertyIndex[$propertyId] = $newEntry;
+                $propertyIdToName[$propertyId] = $property['propertyName'];
 
                 $shape['sh:property'][] = $newEntry;
             }
@@ -345,8 +364,11 @@ class GenerateKnowledgeBasedOnDBTables extends Process
              * pretty print and put into a file
              */
             if ($this->createFiles) {
-                $data = json_encode($data, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_IGNORE);
-                if (false == $data) {
+                $jsonData = json_encode(
+                    $data,
+                    JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_IGNORE
+                );
+                if (false == $jsonData) {
                     throw new Exception('Could not JSON encode $data.');
                 } else {
                     $file = $this->dwmConfig->getFolderPathForKnowledgeBasedOnDatabaseTables().'/';
@@ -354,7 +376,7 @@ class GenerateKnowledgeBasedOnDBTables extends Process
                     /** @var string */
                     $filename = $knowledgeEntry['fileName'];
                     $file .= $filename;
-                    file_put_contents($file, $data);
+                    file_put_contents($file, $jsonData);
                 }
             }
         }, $this->knowledgeEntries);

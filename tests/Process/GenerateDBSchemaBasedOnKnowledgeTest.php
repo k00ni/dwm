@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace DWM\Tests\RDF;
 
-use DWM\Process\GenerateKnowledgeBasedOnDBTables;
+use DWM\Process\GenerateDBSchemaBasedOnKnowledge;
 use DWM\Test\DBTestCase;
 
-class GenerateKnowledgeBasedOnDBTablesTest extends DBTestCase
+class GenerateDBSchemaBasedOnKnowledgeTest extends DBTestCase
 {
     public function testUsage(): void
     {
@@ -19,8 +19,8 @@ class GenerateKnowledgeBasedOnDBTablesTest extends DBTestCase
 
         $dwmConfig = $this->generateDwmConfigMock();
 
-        $sut = new GenerateKnowledgeBasedOnDBTables($dwmConfig, false);
-        $data = $sut->doSteps()->getResult();
+        $sut = new GenerateDBSchemaBasedOnKnowledge($dwmConfig, false);
+        $result = $sut->doSteps()->getResult();
 
         self::assertEquals($data['@graph'][0]['@id'], 'test:User');
         self::assertEquals($data['@graph'][1]['@id'], 'test:UserShape');

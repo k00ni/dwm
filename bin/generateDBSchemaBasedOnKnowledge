@@ -1,0 +1,10 @@
+#!/usr/bin/env php
+<?php
+
+use DWM\DWMConfig;
+use DWM\Process\GenerateDBClassesFromKnowledge;
+use DWM\Process\GenerateDBSchemaBasedOnKnowledge;
+
+require $_composer_autoload_path ?? __DIR__ . '/../vendor/autoload.php';
+
+return (new GenerateDBSchemaBasedOnKnowledge(new DWMConfig(), true))->doSteps()->getResult();

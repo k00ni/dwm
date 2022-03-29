@@ -23,8 +23,23 @@ class RDFValue
         if (isset($data['@id'])) {
             $this->id = $namespaceHelper->expandId($data['@id']);
         } elseif (isset($data['@value'])) {
+            // boolean
+            if (is_bool($data['@value'])) {
+                $data['@value'] = true === $data['@value'] ? '1' : '0';
+                if (!isset($data['@type'])) {
+                    $data['@type'] = 'http:\/\/www.w3.org\/2001\/XMLSchema#boolean';
+                }
+            } elseif (is_int($data['@value'])) {
+                // integer
+                $data['@value'] = (string) $data['@value'];
+                if (!isset($data['@type'])) {
+                    $data['@type'] = 'http:\/\/www.w3.org\/2001\/XMLSchema#integer';
+                }
+            }
+
             $this->value = $data['@value'];
         } else {
+            var_dump($data);
             throw new Exception('Either @value or @id must be set.');
         }
 

@@ -38,6 +38,10 @@ final class RDFEntry
 
         // @type
         if (isset($jsonLDAsArray['@type'])) {
+            if (is_string($jsonLDAsArray['@type'])) {
+                $jsonLDAsArray['@type'] = [$jsonLDAsArray['@type']];
+            }
+
             /** @var array<string> */
             $types = $jsonLDAsArray['@type'];
             $this->types = $types;
@@ -58,12 +62,21 @@ final class RDFEntry
             if (!isset($this->propertyValues[$propertyId])) {
                 $this->propertyValues[$propertyId] = [];
             }
+
+            if (!is_array($values)) {
+                $values = [$values];
+            }
+
             /** @var array<mixed> */
             $values = $values;
 
             foreach ($values as $value) {
                 /** @var array<string,string> */
                 $value = $value;
+
+                if (!is_array($value)) {
+                    $value = ['@value' => $value];
+                }
 
                 $this->propertyValues[$propertyId][] = new RDFValue($value);
             }

@@ -116,8 +116,18 @@ class RDFGraph implements Countable
                     $newEntry['propertyName'] = $this->getPropertyNameForId((string) $path);
 
                     foreach ([
+                        'dwm:defaultValue' => 'defaultValue',
                         'sh:minCount' => 'minCount',
                         'sh:maxCount' => 'maxCount',
+                        'dwm:dbIsPrimaryKey' => 'isPrimaryKey',
+                        'dwm:dbIsAutoIncrement' => 'isAutoIncrement',
+                        // constraint
+                        'dwm:constraintName' => 'constraintName',
+                        'dwm:constraintColumnName' => 'constraintColumnName',
+                        'dwm:constraintReferencedTable' => 'constraintReferencedTable',
+                        'dwm:constraintReferencedTableColumnName' => 'constraintReferencedTableColumnName',
+                        'dwm:constraintUpdateRule' => 'constraintUpdateRule',
+                        'dwm:constraintDeleteRule' => 'constraintDeleteRule',
                     ] as $propertyId => $key) {
                         if ($rdfEntry->hasProperty($propertyId)) {
                             $newEntry[$key] = $rdfEntry->getPropertyValue($propertyId)->getIdOrValue();
@@ -135,9 +145,6 @@ class RDFGraph implements Countable
                         $pos = strpos($newEntry['datatypeId'], '#');
                         $pos = false === $pos ? 0 : $pos + 1;
                         $newEntry['datatype'] = substr($newEntry['datatypeId'], $pos);
-                    } elseif ($rdfEntry->hasProperty('dwm:datatype')) {
-                        $newEntry['isListOfObjects'] = true;
-                        $newEntry['objectsOfType'] = $rdfEntry->getPropertyValue('dwm:datatype')->getIdOrValue();
                     }
 
                     $propertyInfo[$newEntry['propertyName']] = $newEntry;

@@ -10,6 +10,7 @@ use Doctrine\DBAL\DriverManager;
 class DBTestCase extends TestCase
 {
     protected Connection $connection;
+    protected string $database;
 
     public function setUp(): void
     {
@@ -22,6 +23,8 @@ class DBTestCase extends TestCase
             'host' => $_ENV['DB_HOST'],
             'driver' => 'pdo_mysql',
         ];
+
+        $this->database = $_ENV['DB_NAME'];
 
         $this->connection = DriverManager::getConnection($accessDataArr);
 

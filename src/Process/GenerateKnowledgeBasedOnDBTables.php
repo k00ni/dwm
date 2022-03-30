@@ -127,11 +127,6 @@ class GenerateKnowledgeBasedOnDBTables extends Process
         }, $tables);
     }
 
-    private function snakeStyleToCamelStyle(string $str): string
-    {
-        return lcfirst(str_replace('_', '', ucwords($str, '_')));
-    }
-
     /**
      * @param array<string,string|null> $propertyArr
      *

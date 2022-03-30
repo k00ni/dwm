@@ -10,6 +10,9 @@ use DWM\Attribute\ProcessStep;
 use DWM\DWMConfig;
 use DWM\RDF\RDFGraph;
 use DWM\SimpleStructure\Process;
+use DWM\SQL\MySQLColumn;
+use DWM\SQL\MySQLColumnConstraint;
+use DWM\SQL\MySQLTable;
 use Exception;
 
 class GenerateDBSchemaBasedOnKnowledge extends Process
@@ -52,15 +55,6 @@ class GenerateDBSchemaBasedOnKnowledge extends Process
         $this->result = [
             'currentDatabaseDescription' => [],
             'expectedDatabaseDescription' => [],
-            'sqlDiff' => [
-                'createTables' => [],
-                'alterTables' => [],
-                'dropTables' => [],
-                'dropPrimaryKeys' => [],
-                'addPrimaryKeys' => [],
-                'dropForeignKeys' => [],
-                'addForeignKeys' => [],
-            ],
         ];
     }
 
@@ -104,140 +98,89 @@ class GenerateDBSchemaBasedOnKnowledge extends Process
         $subGraph = $this->graph->getSubGraphWithEntriesWithPropertyValue('dwm:isStoredInDatabase', 'true');
 
         array_map(function ($rdfEntry) {
-            /** @var array<string,string|array<mixed>> */
-            $newEntry = [];
-
             /** @var \DWM\RDF\RDFEntry */
             $rdfEntry = $rdfEntry;
 
-            $newEntry = ['columns' => []];
+            $newTable = new MySQLTable($this->connection, $this->database);
 
             // table name
-            $newEntry['tableName'] = $rdfEntry->getPropertyValue('dwm:className')->getIdOrValue();
+            $newTable->setName($rdfEntry->getPropertyValue('dwm:className')->getIdOrValue());
 
             // get related NodeShape
             $propertyInfo = $this->graph->getPropertyInfoForTargetClassByNodeShape($rdfEntry->getId());
             foreach ($propertyInfo as $property) {
-                /** @var array<string,string> */
-                $column = [];
-                $column['name'] = $property['propertyName'];
+                $column = new MySQLColumn();
+
+                $column->setName($property['propertyName']);
 
                 // primary key
                 if (isset($property['isPrimaryKey'])) {
-                    $column['isPrimaryKey'] = 'true' == $property['isPrimaryKey'];
+                    $column->setIsPrimaryKey('true' == $property['isPrimaryKey']);
                     // auto increment
                     if (isset($property['isAutoIncrement'])) {
-                        $column['isAutoIncrement'] = 'true' == $property['isAutoIncrement'];
+                        $column->setIsAutoIncrement('true' == $property['isAutoIncrement']);
                     }
                 }
 
                 // type
                 if (isset($property['mysqlColumnDataType'])) {
-                    $column['type'] = $property['mysqlColumnDataType'];
+                    $columnType = $property['mysqlColumnDataType'];
                     if (isset($property['maxLength'])) {
-                        $column['type'] .= '('.$property['maxLength'].')';
+                        $columnType .= '('.$property['maxLength'].')';
                     } elseif (isset($property['precision']) && isset($property['scale'])) {
-                        $column['type'] .= '('.$property['precision'].','.$property['scale'].')';
+                        $columnType .= '('.$property['precision'].','.$property['scale'].')';
                     }
                 } else {
                     if ('integer' == $property['datatype']) {
-                        $column['type'] = 'int';
+                        $columnType = 'int';
 
                         if (isset($property['maxLength'])) {
-                            $column['type'] .= '('.$property['maxLength'].')';
+                            $columnType .= '('.$property['maxLength'].')';
                         }
                     } elseif ('string' == $property['datatype']) {
-                        $column['type'] = 'varchar';
+                        $columnType = 'varchar';
 
                         $maxLength = $property['maxLength'] ?? 255;
-                        $column['type'] .= '('.$maxLength.')';
+                        $columnType .= '('.$maxLength.')';
                     } elseif ('date' == $property['datatype']) {
-                        $column['type'] = 'date';
+                        $columnType = 'date';
                     } elseif ('dateTime' == $property['datatype']) {
-                        $column['type'] = 'datetime';
+                        $columnType = 'datetime';
                     } elseif ('double' == $property['datatype']) {
-                        $column['type'] = 'double';
+                        $columnType = 'double';
                     } elseif ('float' == $property['datatype']) {
-                        $column['type'] = 'float';
+                        $columnType = 'float';
                     } else {
                         throw new Exception('Unknown datatype given: '.$property['datatype']);
                     }
                 }
-
-                $column['type'] = strtolower($column['type']);
+                $column->setType(strtolower($columnType));
 
                 // IS NULL
-                if (isset($property['minCount']) && 0 < (int) $property['minCount']) {
-                    $column['canBeNull'] = false;
-                } else {
-                    $column['canBeNull'] = true;
-                }
+                $column->setCanBeNull(isset($property['minCount']) && 0 < (int) $property['minCount']);
 
                 // default value
                 if (isset($property['defaultValue'])) {
-                    $column['defaultValue'] = $property['defaultValue'];
+                    $column->setDefaultValue($property['defaultValue']);
                 }
 
                 // constraint
                 if (isset($property['constraintName'])) {
-                    $column['constraint'] = [
-                        'name' => $property['constraintName'],
-                        'columnName' => $property['constraintColumnName'],
-                        'referencedTable' => $property['constraintReferencedTable'],
-                        'referencedTableColumnName' => $property['constraintReferencedTableColumnName'],
-                        'updateRule' => $property['constraintUpdateRule'],
-                        'deleteRule' => $property['constraintDeleteRule'],
-                    ];
-                }
+                    $constraint = new MySQLColumnConstraint();
+                    $constraint->setName($property['constraintName']);
+                    $constraint->setReferencedTable($property['constraintReferencedTable']);
+                    $constraint->setReferencedTableColumnName($property['constraintReferencedTableColumnName']);
+                    $constraint->setUpdateRule($property['constraintUpdateRule']);
+                    $constraint->setDeleteRule($property['constraintDeleteRule']);
 
-                $newEntry['columns'][$column['name']] = $column;
+                    $column->setConstraint($constraint);
+                }
             }
 
-            $this->result['expectedDatabaseDescription'][$newEntry['tableName']] = $newEntry;
+            $newTable->addColumn($column);
+
+            $this->result['expectedDatabaseDescription'][$newTable->getName()] = $newTable;
         }, $subGraph->getEntries());
-    }
-
-    /**
-     * @return array<string,array<string,string>>
-     */
-    private function getRefineConstraintInfos(string $tableName): array
-    {
-        // foreign key
-        $sql = 'SELECT *
-                  FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-                 WHERE REFERENCED_TABLE_SCHEMA = ? AND TABLE_NAME = ?;';
-        $foreignKeyInfos = $this->connection->fetchAllAssociative(
-            $sql,
-            [$this->database, $tableName]
-        );
-
-        $result = [];
-
-        foreach ($foreignKeyInfos as $info) {
-            /** @var array<string,string> */
-            $info = $info;
-
-            // information received will be put on the referenced table
-            $newEntry = [
-                'constraintName' => $info['CONSTRAINT_NAME'],
-                'constraintColumnName' => $info['COLUMN_NAME'],
-                'constraintReferencedTable' => $info['REFERENCED_TABLE_NAME'],
-                'constraintReferencedTableColumnName' => $info['REFERENCED_COLUMN_NAME'],
-            ];
-
-            // load further constraint information
-            $sql = 'SELECT *
-                      FROM information_schema.REFERENTIAL_CONSTRAINTS
-                     WHERE CONSTRAINT_SCHEMA = ? AND CONSTRAINT_NAME = ?';
-            $constraint = $this->connection->fetchAssociative($sql, [$this->database, $info['CONSTRAINT_NAME']]);
-
-            $newEntry['constraintUpdateRule'] = $constraint['UPDATE_RULE'];
-            $newEntry['constraintDeleteRule'] = $constraint['DELETE_RULE'];
-
-            $result[$info['COLUMN_NAME']] = $newEntry;
-        }
-
-        return $result;
     }
 
     #[ProcessStep()]
@@ -247,112 +190,33 @@ class GenerateDBSchemaBasedOnKnowledge extends Process
         $tableNames = $this->connection->fetchFirstColumn('SHOW TABLES;');
 
         array_map(function ($tableName) {
-            $constraintsPerColumn = $this->getRefineConstraintInfos($tableName);
+            $table = new MySQLTable($this->connection, $this->database);
+            $table->loadColumnsFromDB();
+            $table->loadConstraintInformationPerColumn();
 
-            // describe table columns
-            $sql = 'DESCRIBE `'.$tableName.'`;';
-            $sqlDescriptionEntries = $this->connection->fetchAllAssociative($sql);
-
-            $newEntry = ['columns' => []];
-            $newEntry['tableName'] = $tableName;
-
-            foreach ($sqlDescriptionEntries as $entry) {
-                $newColumn = [];
-
-                // name
-                $newColumn['name'] = $entry['Field'];
-
-                // type
-                $newColumn['type'] = strtolower($entry['Type']);
-
-                // canBeNull
-                $newColumn['canBeNull'] = 'YES' == $entry['Null'];
-
-                // primary key
-                if ('PRI' == $entry['Key']) {
-                    $newColumn['isPrimaryKey'] = true;
-                }
-
-                // auto increment
-                if ('auto_increment' == $entry['Extra']) {
-                    $newColumn['isAutoIncrement'] = true;
-                }
-
-                // defaultValue
-                if (null !== $entry['Default']) {
-                    $newColumn['defaultValue'] = $entry['Default'];
-                }
-
-                if (isset($constraintsPerColumn[$entry['Field']])) {
-                    $newColumn['constraint'] = $constraintsPerColumn[$entry['Field']];
-                }
-
-                $newEntry['columns'][$newColumn['name']] = $newColumn;
-
-                $newEntry['constraintsPerColumn'] = $constraintsPerColumn;
-            }
-
-            $this->result['currentDatabaseDescription'][$tableName] = $newEntry;
+            $this->result['currentDatabaseDescription'][$tableName] = $table;
         }, $tableNames);
     }
 
     #[ProcessStep()]
     protected function generateSQLDiff(): void
     {
-        $currentDb = $this->result['currentDatabaseDescription'];
-
         /** @var array<string> */
         $coveredTables = [];
 
+        $this->result['sqlDiff'] = [
+            'createTables' => [],
+            'alterTables' => [],
+            'dropTables' => [],
+            'dropPrimaryKeys' => [],
+            'addPrimaryKeys' => [],
+            'dropForeignKeys' => [],
+            'addForeignKeys' => [],
+        ];
+
         // expected data counts, what is not in there will be removed or changed
-        foreach ($this->result['expectedDatabaseDescription'] as $tableName => $entry) {
-            if (isset($currentDb[$tableName])) {
-                // column wise check
-                foreach ($entry['columns'] as $columnName => $column) {
-                    // column exists
-                    if (isset($currentDb[$tableName]['columns'][$columnName])) {
-                        $columnWithoutConstraintInfo = $column;
-                        unset($columnWithoutConstraintInfo['constraint']);
-
-                        $currentDbStateEntry = $currentDb[$tableName]['columns'][$columnName];
-                        unset($currentDbStateEntry['constraint']);
-
-                        $diff = array_diff($columnWithoutConstraintInfo, $currentDbStateEntry);
-
-                        // columns differ
-                        if (0 < count($diff)) {
-                            /*
-                             * type of change
-                             */
-                            if (isset($diff['isPrimaryKey']) && true == $diff['isPrimaryKey']) {
-                                $this->result['sqlDiff']['addPrimaryKeys'][] = [
-                                    'tableName' => $tableName,
-                                    'columnEntry' => $column,
-                                ];
-                            } else {
-                                $this->result['sqlDiff']['alterTables'][] = [
-                                    'tableName' => $tableName,
-                                    'type' => 'CHANGE',
-                                    'columnEntry' => $column,
-                                ];
-                            }
-                        } elseif (
-                            false == isset($columnWithoutConstraintInfo['isPrimaryKey'])
-                            && isset($currentDbStateEntry['isPrimaryKey'])
-                        ) {
-                            $this->result['sqlDiff']['dropPrimaryKeys'][] = $tableName;
-                        } else {
-                            // no difference
-                        }
-                    } else {
-                        // column does not exist
-                        $this->result['sqlDiff']['alterTables'][] = [
-                            'tableName' => $tableName,
-                            'type' => 'ADD',
-                            'columnEntry' => $column,
-                        ];
-                    }
-                }
+        foreach ($this->result['expectedDatabaseDescription'] as $tableName => $table) {
+            if (isset($this->result['currentDatabaseDescription'][$tableName])) {
             } else {
                 // table does not exist
                 $this->result['sqlDiff']['createTables'][] = $entry;
@@ -362,59 +226,13 @@ class GenerateDBSchemaBasedOnKnowledge extends Process
         }
 
         // remove tables which do not exist anymore
-        foreach ($currentDb as $tableName => $entry) {
+        foreach ($this->result['currentDatabaseDescription'] as $tableName => $entry) {
             if (in_array($tableName, $coveredTables)) {
                 // OK
             } else {
                 $this->result['sqlDiff']['dropTables'][] = $tableName;
             }
         }
-    }
-
-    private function generateColumnLine(array $column, string $statementType): string
-    {
-        $columnLine = '    `'.$column['name'].'`';
-
-        if ('CHANGE' == $statementType) {
-            $columnLine .= ' `'.$column['name'].'`';
-        }
-
-        $columnLine .= ' '.$column['type'];
-
-        // DEFAULT
-        if (isset($column['defaultValue'])) {
-            $columnLine .= ' DEFAULT "'.$column['defaultValue'].'"';
-        }
-
-        // NULL
-        if ($column['canBeNull']) {
-            $columnLine .= ' NULL';
-        } else {
-            $columnLine .= ' NOT NULL';
-        }
-
-        return $columnLine;
-    }
-
-    private function generateAddForeignKeyConstraintLine(string $tableName, array $constraint): string
-    {
-        $line = 'ALTER TABLE `'.$tableName.'`';
-        $line .= ' ADD CONSTRAINT `'.$constraint['name'].'`';
-
-        $line .= ' FOREIGN KEY ('.$constraint['columnName'].')';
-        $line .= ' REFERENCES '.$constraint['referencedTable'].' ('.$constraint['referencedTableColumnName'].')';
-
-        if ('RESTRICT' != $constraint['updateRule']) {
-            $line .= ' ON UPDATE '.$constraint['deleteRule'];
-        }
-
-        if ('RESTRICT' != $constraint['deleteRule']) {
-            $line .= ' ON DELETE '.$constraint['deleteRule'];
-        }
-
-        $line .= ';';
-
-        return $line;
     }
 
     #[ProcessStep()]

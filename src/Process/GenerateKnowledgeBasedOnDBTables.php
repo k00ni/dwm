@@ -142,7 +142,7 @@ class GenerateKnowledgeBasedOnDBTables extends Process
         $newProperty = [];
 
         $newProperty['propertyNameInDb'] = (string) $propertyArr['Field'];
-        $newProperty['propertyName'] = $this->snakeStyleToCamelStyle((string) $propertyArr['Field']);
+        $newProperty['propertyName'] = (string) $propertyArr['Field'];
 
         // if NULL is not allowed => minCount == 1
         if ('NO' == $propertyArr['Null']) {
@@ -232,7 +232,7 @@ class GenerateKnowledgeBasedOnDBTables extends Process
 
             /** @var string */
             $tableName = $tableInfo['tableName'];
-            $name = ucfirst($this->snakeStyleToCamelStyle($tableName));
+            $name = $tableName;
 
             // file name
             $newEntry['fileName'] = $name.'.jsonld';

@@ -56,6 +56,10 @@ class GenerateDBSchemaBasedOnKnowledge extends Process
                 'createTables' => [],
                 'alterTables' => [],
                 'dropTables' => [],
+                'dropPrimaryKeys' => [],
+                'addPrimaryKeys' => [],
+                'dropForeignKeys' => [],
+                'addForeignKeys' => [],
             ],
         ];
     }
@@ -137,20 +141,24 @@ class GenerateDBSchemaBasedOnKnowledge extends Process
                     }
                 } else {
                     if ('integer' == $property['datatype']) {
-                        $column['type'] = 'INT';
+                        $column['type'] = 'int';
 
                         if (isset($property['maxLength'])) {
                             $column['type'] .= '('.$property['maxLength'].')';
                         }
                     } elseif ('string' == $property['datatype']) {
-                        $column['type'] = 'VARCHAR';
+                        $column['type'] = 'varchar';
 
                         $maxLength = $property['maxLength'] ?? 255;
                         $column['type'] .= '('.$maxLength.')';
+                    } elseif ('date' == $property['datatype']) {
+                        $column['type'] = 'date';
+                    } elseif ('dateTime' == $property['datatype']) {
+                        $column['type'] = 'datetime';
                     } elseif ('double' == $property['datatype']) {
-                        $column['type'] = 'DOUBLE';
+                        $column['type'] = 'double';
                     } elseif ('float' == $property['datatype']) {
-                        $column['type'] = 'FLOAT';
+                        $column['type'] = 'float';
                     } else {
                         throw new Exception('Unknown datatype given: '.$property['datatype']);
                     }
@@ -310,23 +318,29 @@ class GenerateDBSchemaBasedOnKnowledge extends Process
                         unset($currentDbStateEntry['constraint']);
 
                         $diff = array_diff($columnWithoutConstraintInfo, $currentDbStateEntry);
+
                         // columns differ
                         if (0 < count($diff)) {
-                            echo PHP_EOL;
-                            echo PHP_EOL;
-                            echo '-----------------';
-                            echo PHP_EOL;
-                            var_dump($column);
-                            echo PHP_EOL;
-                            var_dump($currentDb[$tableName]['columns'][$columnName]);
-                            echo PHP_EOL;
-                            var_dump($diff);
-
-                            $this->result['sqlDiff']['alterTables'][] = [
-                                'tableName' => $tableName,
-                                'type' => 'MODIFY',
-                                'columnEntry' => $column,
-                            ];
+                            /*
+                             * type of change
+                             */
+                            if (isset($diff['isPrimaryKey']) && true == $diff['isPrimaryKey']) {
+                                $this->result['sqlDiff']['addPrimaryKeys'][] = [
+                                    'tableName' => $tableName,
+                                    'columnEntry' => $column,
+                                ];
+                            } else {
+                                $this->result['sqlDiff']['alterTables'][] = [
+                                    'tableName' => $tableName,
+                                    'type' => 'CHANGE',
+                                    'columnEntry' => $column,
+                                ];
+                            }
+                        } elseif (
+                            false == isset($columnWithoutConstraintInfo['isPrimaryKey'])
+                            && isset($currentDbStateEntry['isPrimaryKey'])
+                        ) {
+                            $this->result['sqlDiff']['dropPrimaryKeys'][] = $tableName;
                         } else {
                             // no difference
                         }
@@ -357,19 +371,15 @@ class GenerateDBSchemaBasedOnKnowledge extends Process
         }
     }
 
-    private function generateColumnLine(array $column): string
+    private function generateColumnLine(array $column, string $statementType): string
     {
-        $columnLine = '`'.$column['name'].'`';
+        $columnLine = '    `'.$column['name'].'`';
+
+        if ('CHANGE' == $statementType) {
+            $columnLine .= ' `'.$column['name'].'`';
+        }
 
         $columnLine .= ' '.$column['type'];
-
-        // PRIMARY KEY
-        if (isset($column['isPrimaryKey'])) {
-            $columnLine .= ' PRIMARY KEY';
-        }
-        if (isset($column['isAutoIncrement'])) {
-            $columnLine .= ' AUTO INCREMENT';
-        }
 
         // DEFAULT
         if (isset($column['defaultValue'])) {
@@ -472,9 +482,25 @@ class GenerateDBSchemaBasedOnKnowledge extends Process
                 $sqlMigrationFileContent[] = 'DROP TABLE `'.$table.'`';
             }
 
+            /*
+             * add primary keys
+             */
+            foreach ($this->result['sqlDiff']['addPrimaryKeys'] as $entry) {
+                $line = 'ALTER TABLE `'.$entry['tableName'].'` ADD PRIMARY KEY (`'.$entry['columnEntry']['name'].'`);';
+                $sqlMigrationFileContent[] = $line;
+            }
+
+            /*
+             * drop primary keys
+             */
+            foreach ($this->result['sqlDiff']['dropPrimaryKeys'] as $tableName) {
+                $line = 'ALTER TABLE `'.$tableName.'` DROP PRIMARY KEY;';
+                $sqlMigrationFileContent[] = $line;
+            }
+
             // write file
             if (0 < count($sqlMigrationFileContent)) {
-                $data = implode(PHP_EOL, $sqlMigrationFileContent);
+                $data = implode(PHP_EOL.PHP_EOL, $sqlMigrationFileContent);
                 file_put_contents($sqlMigrationFilePath, $data);
             } else {
                 echo 'No changes detected.';

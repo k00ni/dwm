@@ -160,15 +160,15 @@ class GenerateKnowledgeBasedOnDBTables extends Process
             $newProperty['typeId'] = 'xsd:string';
 
             // max length
-            $newProperty['maxLength'] = str_replace('varchar(', '', (string) $propertyArr['Type']);
-            $newProperty['maxLength'] = str_replace(')', '', $newProperty['maxLength']);
+            preg_match('/\(([0-9]+)\)/', (string) $propertyArr['Type'], $matches);
+            $newProperty['maxLength'] = $matches[1];
         } elseif (str_contains((string) $propertyArr['Type'], 'int(')) {
             // name
             $newProperty['typeId'] = 'xsd:integer';
 
             // max length
-            $newProperty['maxLength'] = str_replace('int(', '', (string) $propertyArr['Type']);
-            $newProperty['maxLength'] = str_replace(')', '', $newProperty['maxLength']);
+            preg_match('/\(([0-9]+)\)/', (string) $propertyArr['Type'], $matches);
+            $newProperty['maxLength'] = $matches[1];
         } elseif (str_contains((string) $propertyArr['Type'], 'decimal(')) {
             // name
             $newProperty['typeId'] = 'xsd:double';
@@ -176,6 +176,7 @@ class GenerateKnowledgeBasedOnDBTables extends Process
             preg_match('/\(([0-9]+),([0-9]+)\)/smi', (string) $propertyArr['Type'], $match);
             $newProperty['precision'] = $match[1];
             $newProperty['scale'] = $match[2];
+            $newProperty['mysqlColumnDataType'] = 'decimal';
         } elseif ('date' == $propertyArr['Type']) {
             // name
             $newProperty['typeId'] = 'xsd:date';
@@ -188,9 +189,14 @@ class GenerateKnowledgeBasedOnDBTables extends Process
         } elseif ('longtext' == $propertyArr['Type']) {
             // name
             $newProperty['typeId'] = 'xsd:string';
+            $newProperty['mysqlColumnDataType'] = 'longtext';
+        } elseif ('float' == $propertyArr['Type']) {
+            // name
+            $newProperty['typeId'] = 'xsd:float';
         } elseif ('text' == $propertyArr['Type']) {
             // name
             $newProperty['typeId'] = 'xsd:string';
+            $newProperty['mysqlColumnDataType'] = 'text';
         } else {
             throw new Exception('Unknown MySQL field type given: '.$propertyArr['Type']);
         }
@@ -323,6 +329,22 @@ class GenerateKnowledgeBasedOnDBTables extends Process
                 // sh:minCount
                 if (isset($property['minCount'])) {
                     $newEntry['sh:minCount'] = $property['minCount'];
+                }
+
+                // maxLength
+                if (isset($property['maxLength'])) {
+                    $newEntry['sh:maxLength'] = $property['maxLength'];
+                }
+
+                // precision + scale
+                if (isset($property['precision']) && isset($property['scale'])) {
+                    $newEntry['dwm:precision'] = $property['precision'];
+                    $newEntry['dwm:scale'] = $property['scale'];
+                }
+
+                // mysqlColumnDataType
+                if (isset($property['mysqlColumnDataType'])) {
+                    $newEntry['dwm:mysqlColumnDataType'] = $property['mysqlColumnDataType'];
                 }
 
                 foreach ([

@@ -28,6 +28,8 @@ class DWMConfig
 
     private ?string $folderPathForKnowledgeBasedOnDatabaseTables = null;
 
+    private ?string $folderPathForSqlMigrationFiles = null;
+
     private ?string $generatedDBClassFilesPHPNamespace = null;
     private ?string $generatedDBClassFilesPath = null;
 
@@ -70,6 +72,11 @@ class DWMConfig
     public function getFolderPathForKnowledgeBasedOnDatabaseTables(): ?string
     {
         return $this->folderPathForKnowledgeBasedOnDatabaseTables;
+    }
+
+    public function getFolderPathForSqlMigrationFiles(): ?string
+    {
+        return $this->folderPathForSqlMigrationFiles;
     }
 
     public function getGeneratedDBClassFilesPath(): ?string
@@ -304,6 +311,24 @@ class DWMConfig
             /** @var string|null */
             $defaultNamespaceUriForKnowledgeBasedOnDatabaseTables = $genKnowledgeDatabaseTables['defaultNamespaceUri'] ?? null;
             $this->defaultNamespaceUriForKnowledgeBasedOnDatabaseTables = $defaultNamespaceUriForKnowledgeBasedOnDatabaseTables;
+        }
+
+        /*
+         * generateDBSchemaBasedOnKnowledge
+         */
+        if (isset($data['generateDBSchemaBasedOnKnowledge'])) {
+            /** @var array<string,string> */
+            $generateDBSchemaBasedOnKnowledge = $data['generateDBSchemaBasedOnKnowledge'];
+
+            // folderPathForSqlMigrationFiles
+            /** @var string|null */
+            $folderPathForSqlMigrationFiles = $generateDBSchemaBasedOnKnowledge['folderPathForSqlMigrationFiles'] ?? null;
+            if (is_string($folderPathForSqlMigrationFiles) && file_exists($folderPathForSqlMigrationFiles)) {
+                $this->folderPathForSqlMigrationFiles = $folderPathForSqlMigrationFiles;
+            } else {
+                $msg = 'Path to folder for SQL migration files not found: '.$folderPathForSqlMigrationFiles;
+                throw new Exception($msg);
+            }
         }
     }
 }

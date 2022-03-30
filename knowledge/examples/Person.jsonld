@@ -1,41 +1,41 @@
 {
     "@context": {
-        "dwm": "https://github.com/k00ni/dwm#",
-        "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
-        "schema": "https://schema.org/",
-        "sh": "http://www.w3.org/ns/shacl#",
-        "xsd": "http://www.w3.org/2001/XMLSchema#"
+        "dwm": "https:\/\/github.com\/k00ni\/dwm#",
+        "rdfs": "http:\/\/www.w3.org\/2000\/01\/rdf-schema#",
+        "schema": "https:\/\/schema.org\/",
+        "sh": "http:\/\/www.w3.org\/ns\/shacl#",
+        "xsd": "http:\/\/www.w3.org\/2001\/XMLSchema#"
     },
     "@graph": [
         {
-            "@id": "schema:Person",
+            "@id": "dwm:Person",
             "@type": "rdfs:Class",
             "rdfs:label": "Person",
             "dwm:className": "Person",
-            "rdfs:comment": "A person (alive, dead, undead, or fictional).",
             "dwm:isStoredInDatabase": true
         },
         {
-            "@id": "schema:givenName",
-            "dwm:propertyName": "givenName"
-        },
-        {
-            "@id": "schema:PersonShape",
+            "@id": "dwm:PersonShape",
             "@type": "sh:NodeShape",
             "sh:targetClass": {
-                "@id": "schema:Person"
+                "@id": "dwm:Person"
             },
             "sh:property": [
                 {
                     "sh:path": {
-                        "@id": "schema:givenName"
+                        "@id": "dwm:givenName"
                     },
-                    "sh:minCount": 1,
                     "sh:datatype": {
                         "@id": "xsd:string"
-                    }
+                    },
+                    "sh:minCount": 1,
+                    "sh:maxLength": "255"
                 }
             ]
+        },
+        {
+            "@id": "dwm:givenName",
+            "dwm:propertyName": "givenName"
         }
     ]
 }

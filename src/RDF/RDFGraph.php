@@ -147,6 +147,30 @@ class RDFGraph implements Countable
                         $newEntry['datatype'] = substr($newEntry['datatypeId'], $pos);
                     }
 
+                    // maxlength (e.g. used for INT(11) in MySQL)
+                    if ($rdfEntry->hasProperty('sh:maxLength')) {
+                        /** @var string */
+                        $maxLength = $rdfEntry->getPropertyValue('sh:maxLength')->getIdOrValue();
+                        $newEntry['maxLength'] = $maxLength;
+                    }
+
+                    // precision and scale
+                    if ($rdfEntry->hasProperty('dwm:precision') && $rdfEntry->hasProperty('dwm:scale')) {
+                        /** @var string */
+                        $precision = $rdfEntry->getPropertyValue('dwm:precision')->getIdOrValue();
+                        $newEntry['precision'] = $precision;
+                        /** @var string */
+                        $scale = $rdfEntry->getPropertyValue('dwm:scale')->getIdOrValue();
+                        $newEntry['scale'] = $scale;
+                    }
+
+                    // mysqlColumnDataType
+                    if ($rdfEntry->hasProperty('dwm:mysqlColumnDataType')) {
+                        /** @var string */
+                        $mysqlColumnDataType = $rdfEntry->getPropertyValue('dwm:mysqlColumnDataType')->getIdOrValue();
+                        $newEntry['mysqlColumnDataType'] = $mysqlColumnDataType;
+                    }
+
                     $propertyInfo[$newEntry['propertyName']] = $newEntry;
                 }
             }

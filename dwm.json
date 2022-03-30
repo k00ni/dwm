@@ -9,6 +9,9 @@
         "defaultNamespacePrefix": "dwm",
         "defaultNamespaceUri": "https://github.com/k00ni/dwm#"
     },
+    "generateDBSchemaBasedOnKnowledge": {
+        "folderPathForSqlMigrationFiles": "sqlMigrationFiles"
+    },
     "jenaShaclBinFile": {
         "path": "/home/dwm/apache-jena/bin/shacl"
     },

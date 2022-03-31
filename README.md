@@ -2,6 +2,10 @@
 
 Post Knowledge-driven software development arrived.
 
+## License
+
+This work is licensed under the terms of MIT license.
+
 ## Major goals
 
 With this tool set and methods we want to achieve the following goals:
@@ -30,6 +34,40 @@ Tools like PHPStan help to be as clear as possible about types and classes.
 They may find errors beforehand without running the code.
 Furthermore, code with explicit type usage can easier to understand.
 
-## License
+## Common errors
 
-This work is licensed under the terms of MIT license.
+### Jena SHACL
+
+#### java.lang.ClassCastException: class java.lang.String cannot be cast to class java.lang.Integer
+
+This error occour if a value, which is meant to be of type `integer`, is of type `string`.
+
+This is **wrong** (check `sh:minCount` and `sh:maxLength`):
+
+```json
+{
+    "sh:path": {
+        "@id": "dwm:givenName"
+    },
+    "sh:datatype": {
+        "@id": "xsd:string"
+    },
+    "sh:minCount": "1",
+    "sh:maxLength": "255"
+}
+```
+
+This is **correct**:
+
+```json
+{
+    "sh:path": {
+        "@id": "dwm:givenName"
+    },
+    "sh:datatype": {
+        "@id": "xsd:string"
+    },
+    "sh:minCount": 1,
+    "sh:maxLength": 255
+}
+```

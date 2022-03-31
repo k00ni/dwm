@@ -12,6 +12,7 @@ parameters:
     level: max
 
     paths:
+        - generatedDBClasses
         - src
         - test
         - tests

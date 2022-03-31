@@ -121,6 +121,7 @@ class RDFGraph implements Countable
                         'sh:maxCount' => 'maxCount',
                         'dwm:dbIsPrimaryKey' => 'isPrimaryKey',
                         'dwm:dbIsAutoIncrement' => 'isAutoIncrement',
+                        'dwm:listWithEntriesOfType' => 'listWithEntriesOfType',
                         // constraint
                         'dwm:constraintName' => 'constraintName',
                         'dwm:constraintColumnName' => 'constraintColumnName',

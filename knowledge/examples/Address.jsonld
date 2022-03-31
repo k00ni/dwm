@@ -8,46 +8,34 @@
     },
     "@graph": [
         {
-            "@id": "dwm:Person",
+            "@id": "dwm:Address",
             "@type": "rdfs:Class",
-            "rdfs:label": "Person",
-            "dwm:className": "Person",
+            "rdfs:label": "Address",
+            "dwm:className": "Address",
             "dwm:isStoredInDatabase": true
         },
         {
-            "@id": "dwm:PersonShape",
+            "@id": "dwm:AddressShape",
             "@type": "sh:NodeShape",
             "sh:targetClass": {
-                "@id": "dwm:Person"
+                "@id": "dwm:Address"
             },
             "sh:property": [
                 {
                     "sh:path": {
-                        "@id": "dwm:givenName"
+                        "@id": "schema:streetAddress"
                     },
                     "sh:datatype": {
                         "@id": "xsd:string"
                     },
                     "sh:minCount": 1,
                     "sh:maxLength": 255
-                },
-                {
-                    "sh:path": {
-                        "@id": "dwm:addressList"
-                    },
-                    "dwm:listWithEntriesOfType": "dwm:Address",
-                    "sh:minCount": 1,
-                    "sh:maxLength": 255
                 }
             ]
         },
         {
-            "@id": "dwm:givenName",
-            "dwm:propertyName": "givenName"
-        },
-        {
-            "@id": "dwm:addressList",
-            "dwm:propertyName": "addressList"
+            "@id": "schema:streetAddress",
+            "dwm:propertyName": "streetAddress"
         }
     ]
 }

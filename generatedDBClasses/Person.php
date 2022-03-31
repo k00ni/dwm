@@ -5,8 +5,8 @@ namespace DWM\DBClass;
 /**
  * Auto generated. Changes will be overriden.
  *
- * @dwm-class-id https://schema.org/Person
- * @dwm-nodeshape-id https://schema.org/PersonShape
+ * @dwm-class-id https://github.com/k00ni/dwm#Person
+ * @dwm-nodeshape-id https://github.com/k00ni/dwm#PersonShape
  */
 class Person
 {
@@ -15,6 +15,11 @@ class Person
      * @dwm-type string
      */
     private string $givenName;
+
+    /**
+     * @var array<Address>
+     */
+    private array $addressList = [];
 
     public function getGivenName(): string
     {
@@ -26,4 +31,16 @@ class Person
         $this->givenName = $value;
     }
 
+    public function addAddress(Address $entry): void
+    {
+        $this->addressList[] = $entry;
+    }
+
+    /**
+     * @return array<Address>
+     */
+    public function getAddressList(): array
+    {
+        return $this->addressList;
+    }
 }

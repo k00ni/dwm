@@ -129,8 +129,8 @@ class GenerateDBClassesFromKnowledge extends Process
                 return ['rawPhpType' => $prefix.'\DateTime'];
             }
         } else {
-            if (isset($property['isListOfObjects']) && true == $property['isListOfObjects']) {
-                return ['rawPhpType' => 'array', 'phpDocType' => $property['objectsOfType']];
+            if (isset($property['listWithEntriesOfType']) && 0 < strlen($property['listWithEntriesOfType'])) {
+                return ['rawPhpType' => 'array', 'phpDocType' => $property['listWithEntriesOfType']];
             }
         }
         throw new Exception('Unknown type given: '.$property['datatype']);
@@ -174,11 +174,28 @@ class GenerateDBClassesFromKnowledge extends Process
                 $content[] = '     * @dwm-type-id '.$property['datatypeId'];
                 $content[] = '     * @dwm-type '.$rawPHPType;
             } else {
+                // if URI was given, translate it to raw classname
+                if (str_contains($phpDocType, ':')) {
+                    $subGraph = $this->graph->getSubGraphWithEntriesWithIdOneOf([$phpDocType]);
+                    if (0 < $subGraph->count()) {
+                        $entry = $subGraph->getEntries()[0];
+                        $phpDocType = 'array<'.$entry->getPropertyValue('dwm:className')->getIdOrValue().'>';
+                    } else {
+                        throw new Exception('No class information found for PHP Doc type.');
+                    }
+                }
+
                 $content[] = '     * @var '.$phpDocType;
             }
 
             $content[] = '     */';
-            $content[] = '    private '.$rawPHPType.' $'.$property['propertyName'].';';
+            $propertyLine = '    private '.$rawPHPType.' $'.$property['propertyName'];
+            if ('array' == $rawPHPType) {
+                $propertyLine .= ' = []';
+            }
+            $propertyLine .= ';';
+            $content[] = $propertyLine;
+
             $content[] = '';
         }
 
@@ -188,21 +205,48 @@ class GenerateDBClassesFromKnowledge extends Process
             $rawPHPType = $phpTypeInfo['rawPhpType'];
             $phpDocType = $phpTypeInfo['phpDocType'] ?? null;
 
-            // getter
-            $functionName = 'get'.ucfirst($property['propertyName']);
-            $content[] = '    public function '.$functionName.'(): '.$rawPHPType;
-            $content[] = '    {';
-            $content[] = '        return $this->'.$property['propertyName'].';';
-            $content[] = '    }';
+            // if URI was given, translate it to raw classname
+            if (str_contains((string) $phpDocType, ':')) {
+                $subGraph = $this->graph->getSubGraphWithEntriesWithIdOneOf([(string) $phpDocType]);
+                if (0 < $subGraph->count()) {
+                    $entry = $subGraph->getEntries()[0];
+                    $className = $entry->getPropertyValue('dwm:className')->getIdOrValue();
 
-            // setter
-            $content[] = '';
-            $functionName = 'set'.ucfirst($property['propertyName']);
-            $content[] = '    public function '.$functionName.'('.$rawPHPType.' $value): void';
-            $content[] = '    {';
-            $content[] = '        $this->'.$property['propertyName'].' = $value;';
-            $content[] = '    }';
-            $content[] = '';
+                    // add entry
+                    $content[] = '    public function add'.$className.'('.$className.' $entry): void';
+                    $content[] = '    {';
+                    $content[] = '        $this->'.$property['propertyName'].'[] = $entry;';
+                    $content[] = '    }';
+                    $content[] = '';
+
+                    // get entries
+                    $content[] = '    /**';
+                    $content[] = '     * @return array<'.$className.'>';
+                    $content[] = '     */';
+                    $content[] = '    public function get'.ucfirst($property['propertyName']).'(): array';
+                    $content[] = '    {';
+                    $content[] = '        return $this->'.$property['propertyName'].';';
+                    $content[] = '    }';
+                } else {
+                    throw new Exception('No class information found for PHP Doc type.');
+                }
+            } else {
+                // getter
+                $functionName = 'get'.ucfirst($property['propertyName']);
+                $content[] = '    public function '.$functionName.'(): '.$rawPHPType;
+                $content[] = '    {';
+                $content[] = '        return $this->'.$property['propertyName'].';';
+                $content[] = '    }';
+
+                // setter
+                $content[] = '';
+                $functionName = 'set'.ucfirst($property['propertyName']);
+                $content[] = '    public function '.$functionName.'('.$rawPHPType.' $value): void';
+                $content[] = '    {';
+                $content[] = '        $this->'.$property['propertyName'].' = $value;';
+                $content[] = '    }';
+                $content[] = '';
+            }
         }
 
         $content[] = '}';

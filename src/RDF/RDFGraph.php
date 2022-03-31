@@ -8,6 +8,8 @@ use Countable;
 use DWM\Exception\EntryNotFoundException;
 use Exception;
 
+use function DWM\isEmpty;
+
 class RDFGraph implements Countable
 {
     private NamespaceHelper $namespaceHelper;

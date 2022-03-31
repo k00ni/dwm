@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace DWM;
+
 /**
  * It seems that empty() is not enough to check, if something is really empty.
  * This function makes sure of the edge cases.

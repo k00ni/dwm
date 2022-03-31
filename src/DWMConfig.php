@@ -24,6 +24,10 @@ class DWMConfig
     private ?string $defaultNamespaceUriForKnowledgeBasedOnDatabaseTables = null;
 
     private ?string $fileWithDatabaseAccessData = null;
+
+    /**
+     * @var array<string,string>|null
+     */
     private ?array $generateKnowledgeBasedOnDatabaseTablesAccessData = null;
 
     private ?string $folderPathForKnowledgeBasedOnDatabaseTables = null;
@@ -90,7 +94,7 @@ class DWMConfig
     }
 
     /**
-     * @return array<string,string>
+     * @return array<string,string>|null
      */
     public function getGenerateKnowledgeBasedOnDatabaseTablesAccessData(): ?array
     {
@@ -285,6 +289,7 @@ class DWMConfig
             /** @var string|null */
             $fileWithAccessData = $genKnowledgeDatabaseTables['fileWithAccessData'] ?? null;
             if (is_string($fileWithAccessData) && file_exists($fileWithAccessData)) {
+                /** @var array<string,string> */
                 $accessData = (array) require $fileWithAccessData;
                 $accessData['driver'] = 'pdo_mysql';
 

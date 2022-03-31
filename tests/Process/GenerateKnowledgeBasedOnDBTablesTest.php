@@ -17,14 +17,17 @@ class GenerateKnowledgeBasedOnDBTablesTest extends DBTestCase
             $this->connection->executeQuery($sql);
         }
 
-        $dwmConfig = $this->generateDwmConfigMock();
+        $dwmConfig = $this->generateDWMConfigMock();
 
         $sut = new GenerateKnowledgeBasedOnDBTables($dwmConfig, false);
+        /** @var array<string,array<int,array<mixed>>> */
         $data = $sut->doSteps()->getResult();
 
         self::assertEquals($data['@graph'][0]['@id'], 'test:User');
         self::assertEquals($data['@graph'][1]['@id'], 'test:UserShape');
 
-        self::assertCount(7, $data['@graph'][1]['sh:property']);
+        /** @var array<mixed> */
+        $properties = $data['@graph'][1]['sh:property'];
+        self::assertCount(7, $properties);
     }
 }

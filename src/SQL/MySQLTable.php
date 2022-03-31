@@ -47,7 +47,7 @@ class MySQLTable
         $this->name = $name;
     }
 
-    public function addColumn(MySQLColumn $column)
+    public function addColumn(MySQLColumn $column): void
     {
         if (isset($this->columns[$column->getName()])) {
             throw new Exception('Table already has a column with name '.$column->getName());
@@ -56,7 +56,7 @@ class MySQLTable
         }
     }
 
-    public function addIndex(MySQLColumnIndex $index)
+    public function addIndex(MySQLColumnIndex $index): void
     {
         if (isset($this->indexes[$index->getName()])) {
             throw new Exception('Table already has an index with name '.$index->getName());
@@ -75,15 +75,17 @@ class MySQLTable
         $sqlDescriptionEntries = $this->connection->fetchAllAssociative('DESCRIBE `'.$this->name.'`;');
 
         foreach ($sqlDescriptionEntries as $entry) {
+            /** @var array<string,string|null> */
+            $entry = $entry;
             $newColumn = new MySQLColumn();
-            $newColumn->setName($entry['Field']);
+            $newColumn->setName((string) $entry['Field']);
 
             // type
-            $type = preg_replace('/(\([0-9]+\))/', '', $entry['Type']);
+            $type = (string) preg_replace('/(\([0-9]+\))/', '', (string) $entry['Type']);
             $newColumn->setType($type);
 
             // length
-            preg_match('/\(([0-9]+)\)/', $entry['Type'], $match);
+            preg_match('/\(([0-9]+)\)/', (string) $entry['Type'], $match);
             if (isset($match[1])) {
                 $newColumn->setLength($match[1]);
             }
@@ -135,6 +137,7 @@ class MySQLTable
                 $sql = 'SELECT *
                           FROM information_schema.REFERENTIAL_CONSTRAINTS
                          WHERE CONSTRAINT_SCHEMA = ? AND CONSTRAINT_NAME = ?';
+                /** @var array<string,string> */
                 $info2 = $this->connection->fetchAssociative($sql, [$this->database, $info['CONSTRAINT_NAME']]);
 
                 $constraint->setUpdateRule($info2['UPDATE_RULE']);
@@ -153,9 +156,11 @@ class MySQLTable
             throw new Exception('Table name is not set.');
         }
 
-        $indexInfoArr = $this->connection->fetchAllAssociative('SHOW INDEXES FROM '.$this->name);
+        $indexInfoArr = $this->connection->fetchAllAssociative('SHOW INDEXES FROM `'.$this->name.'`');
 
         foreach ($indexInfoArr as $indexInfo) {
+            /** @var array<string,string> */
+            $indexInfo = $indexInfo;
             if (isset($this->columns[$indexInfo['Column_name']])) {
                 $index = new MySQLColumnIndex();
                 $index->setName($indexInfo['Key_name']);
@@ -198,6 +203,9 @@ class MySQLTable
         throw new Exception('Table does not have an index with name '.$name);
     }
 
+    /**
+     * @return array<string,array<mixed>>
+     */
     public function checkDiffAndCreateSQLStatements(self $otherTable): array
     {
         $report = [
@@ -210,17 +218,19 @@ class MySQLTable
             'dropKeyStatements' => [],
         ];
 
-        /**
+        /*
          * columns
          */
         foreach ($this->columns as $columnName => $column) {
             // column exists
             if ($otherTable->hasColumnWithName($columnName)) {
                 $otherColumn = $otherTable->getColumnWithName($columnName);
+                /** @var array<string,array<string>> */
                 $columnSqls = $column->checkDiffAndCreateSQLStatements($this->name, $otherColumn);
 
+                $report['alterTableStatements'] = array_merge($report['alterTableStatements'], $columnSqls['alterTableStatements']);
+
                 foreach ([
-                    'alterTableStatement',
                     'addForeignKeyStatement',
                     'dropForeignKeyStatement',
                     'addPrimaryKeyStatement',
@@ -232,9 +242,14 @@ class MySQLTable
                 }
             } else {
                 // column does not exist
-                $report['alterTableStatements'][] = $column->toAlterTable($this->name, 'ADD');
+                $stmts = $column->getAlterTableStatements($this->name, 'ADD');
 
-                if ($column->getIsPrimaryKey()) {
+                $report['alterTableStatements'][] = $stmts['alterTableForColumn'];
+                if (null !== $stmts['alterTableForAutoIncrement']) {
+                    $report['alterTableStatements'][] = $stmts['alterTableForAutoIncrement'];
+                }
+
+                if (true == $column->getIsPrimaryKey()) {
                     $stmt = 'ALTER TABLE '.$this->name.' ADD PRIMARY KEY('.$column->getName().');';
                     $report['addPrimaryKeyStatements'][] = $stmt;
                 }
@@ -267,18 +282,52 @@ class MySQLTable
 
     public function toCreateStatement(): string
     {
-        $result = 'CREATE TABLE '.$this->name.' (';
+        $result = 'CREATE TABLE `'.$this->name.'` ('.PHP_EOL;
 
+        /** @var array<string> */
         $lines = [];
         foreach ($this->columns as $column) {
-            $lines[] = $column->toLine();
+            $lines[] = '    '.$column->toLine().',';
         }
         $result .= implode(PHP_EOL, $lines);
 
-        $result .= ') ENGINE='.$this->engine;
+        // remove last ,
+        $result = substr($result, 0, strlen($result) - 1);
+
+        $result .= PHP_EOL.') ENGINE='.$this->engine;
         $result .= ' CHARSET='.$this->charset;
         $result .= ' COLLATE='.$this->collate;
         $result .= ';';
+
+        return $result;
+    }
+
+    /**
+     * @return array<string>
+     */
+    public function getStatementsToAddAllConstraints(): array
+    {
+        $result = [];
+
+        foreach ($this->columns as $column) {
+            if ($column->getConstraint() instanceof MySQLColumnConstraint) {
+                $result[] = $column->getConstraint()->toAddStatement($this->name);
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return array<string>
+     */
+    public function getStatementsToAddAllIndexes(): array
+    {
+        $result = [];
+
+        foreach ($this->indexes as $name => $index) {
+            $result[] = $index->toAddStatement($this->name);
+        }
 
         return $result;
     }

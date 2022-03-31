@@ -8,7 +8,9 @@
     "dwm:requiredSteps": [
         "loadDwmJson",
         "createGraphBasedOnMergedKnowledge",
-        "getDBRelatedClassesAndMetaData",
-        "generatePHPCode"
+        "generateExpectedDatabaseDescription",
+        "generateCurrentDatabaseDescription",
+        "generateSQLDiff",
+        "createFiles"
     ]
 }

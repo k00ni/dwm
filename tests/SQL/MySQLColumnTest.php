@@ -22,7 +22,7 @@ class MySQLColumnTest extends DBTestCase
         $col1->setDefaultValue('dv1');
 
         self::assertEquals(
-            '`col1` int(10) AUTO_INCREMENT DEFAULT "dv1" NOT NULL',
+            '`col1` int(10) DEFAULT "dv1" NOT NULL',
             $col1->toLine()
         );
     }
@@ -56,7 +56,10 @@ class MySQLColumnTest extends DBTestCase
 
         self::assertEquals(
             [
-                'alterTableStatement' => 'ALTER TABLE `t1` CHANGE `col1` `col1` int(10) AUTO_INCREMENT DEFAULT "dv1" NOT NULL;',
+                'alterTableStatements' => [
+                    'ALTER TABLE `t1` CHANGE `col1` `col1` int(10) DEFAULT "dv1" NOT NULL;',
+                    'ALTER TABLE `t1` MODIFY `col1` int(10) DEFAULT "dv1" NOT NULL AUTO_INCREMENT;',
+                ],
                 'addPrimaryKeyStatement' => 'ALTER TABLE t1 ADD PRIMARY KEY(col1);',
                 'dropPrimaryKeyStatement' => null,
                 'addForeignKeyStatement' => 'ALTER TABLE `t1` ADD CONSTRAINT `constraint1` FOREIGN KEY (`col1`) REFERENCES `refTable` (`refColumn`) ON UPDATE CASCADE ON DELETE CASCADE;',
@@ -92,7 +95,9 @@ class MySQLColumnTest extends DBTestCase
 
         self::assertEquals(
             [
-                'alterTableStatement' => 'ALTER TABLE `t1` CHANGE `col1` `col1` int(10) NOT NULL;',
+                'alterTableStatements' => [
+                    'ALTER TABLE `t1` CHANGE `col1` `col1` int(10) NOT NULL;',
+                ],
                 'addPrimaryKeyStatement' => null,
                 'dropPrimaryKeyStatement' => null,
                 'addForeignKeyStatement' => 'ALTER TABLE `t1` ADD CONSTRAINT `constraint1` FOREIGN KEY (`col1`) REFERENCES `refTable` (`refColumn`) ON UPDATE CASCADE ON DELETE CASCADE;',
@@ -122,7 +127,9 @@ class MySQLColumnTest extends DBTestCase
 
         self::assertEquals(
             [
-                'alterTableStatement' => 'ALTER TABLE `t1` CHANGE `col1` `col1` int(10) NOT NULL;',
+                'alterTableStatements' => [
+                    'ALTER TABLE `t1` CHANGE `col1` `col1` int(10) NOT NULL;',
+                ],
                 'addPrimaryKeyStatement' => null,
                 'dropPrimaryKeyStatement' => 'ALTER TABLE t1 DROP PRIMARY KEY;',
                 'addForeignKeyStatement' => null,

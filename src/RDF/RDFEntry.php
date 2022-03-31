@@ -71,7 +71,7 @@ final class RDFEntry
             $values = $values;
 
             foreach ($values as $value) {
-                /** @var array<string,string> */
+                /** @var array<string,string>|string */
                 $value = $value;
 
                 if (!is_array($value)) {

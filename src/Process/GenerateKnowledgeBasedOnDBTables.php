@@ -22,6 +22,9 @@ class GenerateKnowledgeBasedOnDBTables extends Process
 
     private DWMConfig $dwmConfig;
 
+    /**
+     * @var array<int|string,array<string,string>>
+     */
     private array $foreignKeyInformation = [];
 
     /**
@@ -64,9 +67,12 @@ class GenerateKnowledgeBasedOnDBTables extends Process
 
         $accessData = $this->dwmConfig->getGenerateKnowledgeBasedOnDatabaseTablesAccessData();
 
-        $this->connection = DriverManager::getConnection($accessData);
-
-        $this->database = $accessData['dbname'];
+        if (null == $accessData) {
+            throw new Exception('No access data found in dwm.json');
+        } else {
+            $this->connection = DriverManager::getConnection($accessData);
+            $this->database = $accessData['dbname'];
+        }
     }
 
     #[ProcessStep()]
@@ -115,6 +121,7 @@ class GenerateKnowledgeBasedOnDBTables extends Process
                 $sql = 'SELECT *
                           FROM information_schema.REFERENTIAL_CONSTRAINTS
                          WHERE CONSTRAINT_SCHEMA = ? AND CONSTRAINT_NAME = ?';
+                /** @var array<string,string> */
                 $constraint = $this->connection->fetchAssociative($sql, [$this->database, $info['CONSTRAINT_NAME']]);
 
                 $newForeignKeyInfo['constraintUpdateRule'] = $constraint['UPDATE_RULE'];
@@ -247,8 +254,8 @@ class GenerateKnowledgeBasedOnDBTables extends Process
                 // add foreign key information if set
                 $key = $tableName.'_'.$newProperty['propertyNameInDb'];
                 if (isset($this->foreignKeyInformation[$key])) {
-                    foreach ($this->foreignKeyInformation[$key] as $key => $value) {
-                        $newProperty[$key] = $value;
+                    foreach ($this->foreignKeyInformation[$key] as $key2 => $value) {
+                        $newProperty[$key2] = $value;
                     }
                 }
 

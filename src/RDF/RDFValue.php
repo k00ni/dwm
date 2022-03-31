@@ -13,7 +13,7 @@ class RDFValue
     private ?string $type = null;
 
     /**
-     * @param array<string,string> $data
+     * @param array<string,string|bool|int> $data
      */
     public function __construct(array $data)
     {
@@ -21,7 +21,7 @@ class RDFValue
 
         // @id is either a blank node ID or URI
         if (isset($data['@id'])) {
-            $this->id = $namespaceHelper->expandId($data['@id']);
+            $this->id = $namespaceHelper->expandId((string) $data['@id']);
         } elseif (isset($data['@value'])) {
             // boolean
             if (is_bool($data['@value'])) {
@@ -37,14 +37,14 @@ class RDFValue
                 }
             }
 
-            $this->value = $data['@value'];
+            $this->value = (string) $data['@value'];
         } else {
             var_dump($data);
             throw new Exception('Either @value or @id must be set.');
         }
 
         if (isset($data['@type'])) {
-            $this->type = $namespaceHelper->expandId($data['@type']);
+            $this->type = $namespaceHelper->expandId((string) $data['@type']);
         }
     }
 

@@ -33,32 +33,46 @@ class FileFolder
         $this->rootPath = $path;
     }
 
-    public function createFolder(string $folder_path, $permission = 0755): void
+    public function createFolder(string $folder_path, int $permission = 0755): void
     {
         mkdir($folder_path, $permission);
     }
 
-    public function getListOfFilesAndFolders(string $path): iterable
+    /**
+     * @return array<int,array<string,string|bool>>
+     */
+    public function getListOfFilesAndFolders(string $path): array
     {
-        $list = array_diff(scandir($path), ['.', '..']);
-        natcasesort($list);
+        $scanDirResult = scandir($path);
 
-        $result = [];
+        if (is_array($scanDirResult)) {
+            $list = array_diff($scanDirResult, ['.', '..']);
+            natcasesort($list);
 
-        foreach ($list as $entry) {
-            $full_path = rtrim($path, '/').'/'.$entry;
+            $result = [];
 
-            // get lower case file extension without .
-            $file_ext = strtolower(substr($entry, strrpos($entry, '.') + 1));
+            foreach ($list as $entry) {
+                $full_path = rtrim($path, '/').'/'.$entry;
 
-            $result[] = [
-                'name' => basename($entry),
-                'type' => is_dir($full_path) ? 'folder' : 'file',
-                'is_image' => !is_dir($full_path) && in_array($file_ext, ['png', 'jpg', 'jpeg', 'gif']),
-            ];
+                // get lower case file extension without .
+                $pos = strrpos($entry, '.');
+                if (false == $pos) {
+                    continue;
+                }
+
+                $file_ext = strtolower(substr($entry, $pos + 1));
+
+                $result[] = [
+                    'name' => basename($entry),
+                    'type' => is_dir($full_path) ? 'folder' : 'file',
+                    'is_image' => !is_dir($full_path) && in_array($file_ext, ['png', 'jpg', 'jpeg', 'gif'], true),
+                ];
+            }
+
+            return $result;
+        } else {
+            throw new Exception('Could not scan path '.$path);
         }
-
-        return $result;
     }
 
     /**
@@ -78,6 +92,9 @@ class FileFolder
         $result = [];
 
         foreach ($entries as $path) {
+            /** @var \SplFileInfo */
+            $path = $path;
+
             if (!$path->isDir() && !$path->isLink()) {
                 $result[] = $path->getPathname();
             }
@@ -98,6 +115,9 @@ class FileFolder
         );
 
         foreach ($entries as $path) {
+            /** @var \SplFileInfo */
+            $path = $path;
+
             if ($path->isDir() && !$path->isLink()) {
                 rmdir($path->getPathname());
             } else {

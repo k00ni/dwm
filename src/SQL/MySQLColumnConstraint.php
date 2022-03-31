@@ -113,11 +113,11 @@ class MySQLColumnConstraint
         $result .= ' FOREIGN KEY (`'.$this->columnName.'`)';
         $result .= ' REFERENCES `'.$this->referencedTable.'` (`'.$this->referencedTableColumnName.'`)';
 
-        if (null != $this->updateRule) {
+        if (false == in_array($this->updateRule, [null, 'RESTRICT'], true)) {
             $result .= ' ON UPDATE '.$this->updateRule;
         }
 
-        if (null != $this->deleteRule) {
+        if (false == in_array($this->deleteRule, [null, 'RESTRICT'], true)) {
             $result .= ' ON DELETE '.$this->deleteRule;
         }
 

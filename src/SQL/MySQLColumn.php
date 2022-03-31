@@ -100,7 +100,7 @@ class MySQLColumn
     /**
      * Assumption: This column is meant to be persist and $otherColumn is outdated.
      *
-     * @return array<string>
+     * @return array<string,array<int,mixed>|string|null>
      */
     public function checkDiffAndCreateSQLStatements(string $table, self $otherColumn): array
     {
@@ -109,7 +109,7 @@ class MySQLColumn
         }
 
         $statements = [
-            'alterTableStatement' => null,
+            'alterTableStatements' => [],
             'addForeignKeyStatement' => null,
             'dropForeignKeyStatement' => null,
             'addPrimaryKeyStatement' => null,
@@ -139,16 +139,20 @@ class MySQLColumn
         }
 
         if ($foundDiff) {
-            $statements['alterTableStatement'] = $this->toAlterTable($table, 'CHANGE');
+            $stmts = $this->getAlterTableStatements($table, 'CHANGE');
+            $statements['alterTableStatements'][] = $stmts['alterTableForColumn'];
+            if (null !== $stmts['alterTableForAutoIncrement']) {
+                $statements['alterTableStatements'][] = $stmts['alterTableForAutoIncrement'];
+            }
         }
 
         /*
          * primary key
          */
-        if ($this->isPrimaryKey && false == $otherColumn->getIsPrimaryKey()) {
+        if (true == $this->isPrimaryKey && false == $otherColumn->getIsPrimaryKey()) {
             $statements['addPrimaryKeyStatement'] = 'ALTER TABLE '.$table.' ADD PRIMARY KEY';
             $statements['addPrimaryKeyStatement'] .= '('.$this->name.');';
-        } elseif (false == $this->isPrimaryKey && $otherColumn->getIsPrimaryKey()) {
+        } elseif (false == $this->isPrimaryKey && true == $otherColumn->getIsPrimaryKey()) {
             $statements['dropPrimaryKeyStatement'] = 'ALTER TABLE '.$table.' DROP PRIMARY KEY;';
         }
 
@@ -177,22 +181,17 @@ class MySQLColumn
         $result .= ' '.$this->type;
 
         // length
-        if (null !== $this->length && strlen($this->length)) {
+        if (null !== $this->length && 0 < strlen($this->length)) {
             $result .= '('.$this->length.')';
         }
 
-        // Auto Increment
-        if ($this->isAutoIncrement) {
-            $result .= ' AUTO_INCREMENT';
-        }
-
         // DEFAULT
-        if (null !== $this->defaultValue && strlen($this->defaultValue)) {
+        if (null !== $this->defaultValue && 0 < strlen($this->defaultValue)) {
             $result .= ' DEFAULT "'.$this->defaultValue.'"';
         }
 
         // NULL
-        if ($this->canBeNull) {
+        if (true == $this->canBeNull) {
             $result .= ' NULL';
         } else {
             $result .= ' NOT NULL';
@@ -201,16 +200,27 @@ class MySQLColumn
         return $result;
     }
 
-    public function toAlterTable(string $table, string $type): string
+    /**
+     * @return array<string,string|null>
+     */
+    public function getAlterTableStatements(string $table, string $type): array
     {
-        $result = 'ALTER TABLE `'.$table.'` '.$type;
-
+        // all but auto increment
+        $result1 = 'ALTER TABLE `'.$table.'` '.$type;
         if ('CHANGE' == $type) {
-            $result .= ' `'.$this->name.'`';
+            $result1 .= ' `'.$this->name.'`';
+        }
+        $result1 .= ' '.$this->toLine().';';
+
+        // Auto Increment
+        $result2 = null;
+        if (true == $this->isAutoIncrement) {
+            $result2 = 'ALTER TABLE `'.$table.'` MODIFY '.$this->toLine().' AUTO_INCREMENT;';
         }
 
-        $result .= ' '.$this->toLine().';';
-
-        return $result;
+        return [
+            'alterTableForColumn' => $result1,
+            'alterTableForAutoIncrement' => $result2,
+        ];
     }
 }

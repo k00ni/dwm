@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace DWM\Tests\SQL;
 
-use DWM\SQL\MySQLColumn;
-use DWM\SQL\MySQLColumnConstraint;
 use DWM\SQL\MySQLColumnIndex;
 use DWM\Test\DBTestCase;
 

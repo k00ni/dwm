@@ -19,7 +19,24 @@ class GenerateDBSchemaBasedOnKnowledge extends Process
 {
     private Connection $connection;
 
+    private bool $createFiles;
+
     private string $currentPath;
+
+    /**
+     * @var array<string,MySQLTable>
+     */
+    private array $currentDatabaseDescription;
+
+    /**
+     * @var array<string,MySQLTable>
+     */
+    private array $expectedDatabaseDescription;
+
+    /**
+     * @var array<mixed>
+     */
+    private array $sqlDiff;
 
     private string $database;
 
@@ -52,10 +69,6 @@ class GenerateDBSchemaBasedOnKnowledge extends Process
 
         $this->createFiles = $createFiles;
         $this->dwmConfig = $dwmConfig;
-        $this->result = [
-            'currentDatabaseDescription' => [],
-            'expectedDatabaseDescription' => [],
-        ];
     }
 
     #[ProcessStep()]
@@ -65,9 +78,12 @@ class GenerateDBSchemaBasedOnKnowledge extends Process
 
         $accessData = $this->dwmConfig->getGenerateKnowledgeBasedOnDatabaseTablesAccessData();
 
-        $this->connection = DriverManager::getConnection($accessData);
-
-        $this->database = $accessData['dbname'];
+        if (null == $accessData) {
+            throw new Exception('No access data found in dwm.json');
+        } else {
+            $this->connection = DriverManager::getConnection($accessData);
+            $this->database = $accessData['dbname'];
+        }
     }
 
     #[ProcessStep()]
@@ -97,18 +113,32 @@ class GenerateDBSchemaBasedOnKnowledge extends Process
     {
         $subGraph = $this->graph->getSubGraphWithEntriesWithPropertyValue('dwm:isStoredInDatabase', 'true');
 
-        array_map(function ($rdfEntry) {
+        $expectedDatabaseDescription = [];
+
+        foreach ($subGraph->getEntries() as $rdfEntry) {
             /** @var \DWM\RDF\RDFEntry */
             $rdfEntry = $rdfEntry;
 
             $newTable = new MySQLTable($this->connection, $this->database);
 
             // table name
-            $newTable->setName($rdfEntry->getPropertyValue('dwm:className')->getIdOrValue());
+            $name = $rdfEntry->getPropertyValue('dwm:className')->getIdOrValue();
+            if (null == $name) {
+                throw new Exception('No table name found in '.$rdfEntry->getId());
+            }
+            $newTable->setName($name);
 
             // get related NodeShape
             $propertyInfo = $this->graph->getPropertyInfoForTargetClassByNodeShape($rdfEntry->getId());
+
+            if (null == $propertyInfo) {
+                throw new Exception('No related sh:NodeShape found for '.$rdfEntry->getId());
+            }
+
             foreach ($propertyInfo as $property) {
+                /** @var array<string,string> */
+                $property = $property;
+
                 $column = new MySQLColumn();
 
                 $column->setName($property['propertyName']);
@@ -168,6 +198,7 @@ class GenerateDBSchemaBasedOnKnowledge extends Process
                 if (isset($property['constraintName'])) {
                     $constraint = new MySQLColumnConstraint();
                     $constraint->setName($property['constraintName']);
+                    $constraint->setColumnName($property['constraintColumnName']);
                     $constraint->setReferencedTable($property['constraintReferencedTable']);
                     $constraint->setReferencedTableColumnName($property['constraintReferencedTableColumnName']);
                     $constraint->setUpdateRule($property['constraintUpdateRule']);
@@ -175,12 +206,14 @@ class GenerateDBSchemaBasedOnKnowledge extends Process
 
                     $column->setConstraint($constraint);
                 }
+
+                $newTable->addColumn($column);
             }
 
-            $newTable->addColumn($column);
+            $expectedDatabaseDescription[$newTable->getName()] = $newTable;
+        }
 
-            $this->result['expectedDatabaseDescription'][$newTable->getName()] = $newTable;
-        }, $subGraph->getEntries());
+        $this->expectedDatabaseDescription = $expectedDatabaseDescription;
     }
 
     #[ProcessStep()]
@@ -189,13 +222,20 @@ class GenerateDBSchemaBasedOnKnowledge extends Process
         /** @var array<string> */
         $tableNames = $this->connection->fetchFirstColumn('SHOW TABLES;');
 
-        array_map(function ($tableName) {
+        /** @var array<string,MySQLTable> */
+        $currentDatabaseDescription = [];
+
+        foreach ($tableNames as $tableName) {
             $table = new MySQLTable($this->connection, $this->database);
+            $table->setName($tableName);
             $table->loadColumnsFromDB();
             $table->loadConstraintInformationPerColumn();
+            $table->loadIndexInformation();
 
-            $this->result['currentDatabaseDescription'][$tableName] = $table;
-        }, $tableNames);
+            $currentDatabaseDescription[$tableName] = $table;
+        }
+
+        $this->currentDatabaseDescription = $currentDatabaseDescription;
     }
 
     #[ProcessStep()]
@@ -204,33 +244,54 @@ class GenerateDBSchemaBasedOnKnowledge extends Process
         /** @var array<string> */
         $coveredTables = [];
 
-        $this->result['sqlDiff'] = [
+        $this->sqlDiff = [
             'createTables' => [],
-            'alterTables' => [],
             'dropTables' => [],
-            'dropPrimaryKeys' => [],
-            'addPrimaryKeys' => [],
-            'dropForeignKeys' => [],
-            'addForeignKeys' => [],
+            'alterTableStatements' => [],
+            'addForeignKeyStatements' => [],
+            'dropForeignKeyStatements' => [],
+            'addPrimaryKeyStatements' => [],
+            'dropPrimaryKeyStatements' => [],
+            'addKeyStatements' => [],
+            'dropKeyStatements' => [],
         ];
+        $statementKeys = array_keys($this->sqlDiff);
 
-        // expected data counts, what is not in there will be removed or changed
-        foreach ($this->result['expectedDatabaseDescription'] as $tableName => $table) {
-            if (isset($this->result['currentDatabaseDescription'][$tableName])) {
+        // note: expected data counts, what is not in there will be removed or changed
+        foreach ($this->expectedDatabaseDescription as $tableName => $expectedTable) {
+            if (isset($this->currentDatabaseDescription[$tableName])) {
+                $existingTable = $this->currentDatabaseDescription[$tableName];
+                $result = $expectedTable->checkDiffAndCreateSQLStatements($existingTable);
+                foreach ($statementKeys as $key) {
+                    if (isset($result[$key])) {
+                        $this->sqlDiff[$key] = array_merge(
+                            $this->sqlDiff[$key],
+                            $result[$key]
+                        );
+                    }
+                }
             } else {
-                // table does not exist
-                $this->result['sqlDiff']['createTables'][] = $entry;
+                // table does not exist yet
+                $this->sqlDiff['createTables'][] = $expectedTable->toCreateStatement();
+                $this->sqlDiff['addForeignKeyStatements'] = array_merge(
+                    $this->sqlDiff['addForeignKeyStatements'],
+                    $expectedTable->getStatementsToAddAllConstraints()
+                );
+                $this->sqlDiff['addKeyStatements'] = array_merge(
+                    $this->sqlDiff['addKeyStatements'],
+                    $expectedTable->getStatementsToAddAllIndexes()
+                );
             }
 
             $coveredTables[] = $tableName;
         }
 
         // remove tables which do not exist anymore
-        foreach ($this->result['currentDatabaseDescription'] as $tableName => $entry) {
-            if (in_array($tableName, $coveredTables)) {
+        foreach ($this->currentDatabaseDescription as $tableName => $table) {
+            if (in_array($tableName, $coveredTables, true)) {
                 // OK
             } else {
-                $this->result['sqlDiff']['dropTables'][] = $tableName;
+                $this->sqlDiff['dropTables'][] = 'DROP TABLE `'.$tableName.'`';
             }
         }
     }
@@ -244,76 +305,26 @@ class GenerateDBSchemaBasedOnKnowledge extends Process
 
             $sqlMigrationFileContent = [];
 
+            /** @var array<string,array<string>> */
+            $sqlDiff = $this->sqlDiff;
+
             /*
              * CREATE
              */
-            foreach ($this->result['sqlDiff']['createTables'] as $entry) {
-                $constraints = [];
-                $line = 'CREATE TABLE `'.$entry['tableName'].'`(';
-
-                $columnLines = [];
-                foreach ($entry['columns'] as $column) {
-                    $columnLine = $this->generateColumnLine($column, 'ADD');
-                    $columnLines[] = $columnLine;
-
-                    if (isset($column['constraint'])) {
-                        $constraints[] = $column['constraint'];
-                    }
+            foreach ([
+                'dropKeyStatements',
+                'dropForeignKeyStatements',
+                'dropPrimaryKeyStatements',
+                'createTables',
+                'alterTableStatements',
+                'addForeignKeyStatements',
+                'addPrimaryKeyStatements',
+                'addKeyStatements',
+                'dropTables',
+            ] as $key) {
+                foreach ($sqlDiff[$key] as $statement) {
+                    $sqlMigrationFileContent[] = $statement;
                 }
-                $line .= implode(','.PHP_EOL, $columnLines);
-
-                $line .= PHP_EOL.') DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_520_ci` ENGINE = InnoDB;';
-
-                $sqlMigrationFileContent[] = $line;
-
-                // add constraints
-                foreach ($constraints as $constraint) {
-                    $line = $this->generateAddForeignKeyConstraintLine($entry['tableName'], $constraint);
-                    $sqlMigrationFileContent[] = $line;
-                }
-            }
-
-            /*
-             * ALTER
-             */
-            foreach ($this->result['sqlDiff']['alterTables'] as $entry) {
-                $line = 'ALTER TABLE `'.$entry['tableName'].'`';
-
-                $line .= ' '.$entry['type'].' '.$this->generateColumnLine($entry['columnEntry'], $entry['type']);
-
-                $sqlMigrationFileContent[] = $line.';';
-
-                // foreign key
-                if (isset($entry['columnEntry']['constraint'])) {
-                    $line = $this->generateAddForeignKeyConstraintLine($entry['tableName'], $entry['columnEntry']['constraint']);
-
-                    $sqlMigrationFileContent[] = $line;
-                }
-
-                // delete outdated foreign keys?
-            }
-
-            /*
-             * DROP
-             */
-            foreach ($this->result['sqlDiff']['dropTables'] as $table) {
-                $sqlMigrationFileContent[] = 'DROP TABLE `'.$table.'`';
-            }
-
-            /*
-             * add primary keys
-             */
-            foreach ($this->result['sqlDiff']['addPrimaryKeys'] as $entry) {
-                $line = 'ALTER TABLE `'.$entry['tableName'].'` ADD PRIMARY KEY (`'.$entry['columnEntry']['name'].'`);';
-                $sqlMigrationFileContent[] = $line;
-            }
-
-            /*
-             * drop primary keys
-             */
-            foreach ($this->result['sqlDiff']['dropPrimaryKeys'] as $tableName) {
-                $line = 'ALTER TABLE `'.$tableName.'` DROP PRIMARY KEY;';
-                $sqlMigrationFileContent[] = $line;
             }
 
             // write file

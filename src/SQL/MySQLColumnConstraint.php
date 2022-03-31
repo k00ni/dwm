@@ -109,9 +109,13 @@ class MySQLColumnConstraint
     public function toAddStatement(string $tableName): string
     {
         $result = 'ALTER TABLE `'.$tableName.'`';
-        $result .= 'ADD CONSTRAINT `'.$this->name.'`';
+        $result .= ' ADD CONSTRAINT `'.$this->name.'`';
         $result .= ' FOREIGN KEY (`'.$this->columnName.'`)';
         $result .= ' REFERENCES `'.$this->referencedTable.'` (`'.$this->referencedTableColumnName.'`)';
+
+        if (null != $this->updateRule) {
+            $result .= ' ON UPDATE '.$this->updateRule;
+        }
 
         if (null != $this->deleteRule) {
             $result .= ' ON DELETE '.$this->deleteRule;

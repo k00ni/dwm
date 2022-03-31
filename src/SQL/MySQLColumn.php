@@ -9,11 +9,11 @@ use Exception;
 class MySQLColumn
 {
     private ?string $name = null;
+    private ?string $type = null;
+    private ?bool $canBeNull = null;
     private ?bool $isPrimaryKey = null;
     private ?bool $isAutoIncrement = null;
-    private ?string $type = null;
     private ?string $length = null;
-    private ?bool $canBeNull = null;
     private ?string $defaultValue = null;
     private ?MySQLColumnConstraint $constraint = null;
 

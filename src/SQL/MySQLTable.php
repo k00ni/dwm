@@ -10,20 +10,26 @@ use Exception;
 class MySQLTable
 {
     private Connection $connection;
-    private string $database;
-
-    private string $name = '';
 
     /**
      * @var MySQLColumn[]
      */
     private array $columns = [];
 
-    private string $engine = 'InnoDB';
+    private string $database;
 
     private string $charset = 'utf8mb4';
 
     private string $collate = 'utf8mb4_unicode_520_ci';
+
+    private string $engine = 'InnoDB';
+
+    private string $name = '';
+
+    /**
+     * @var MySQLColumnIndex[]
+     */
+    private array $indexes = [];
 
     public function __construct(Connection $connection, string $database)
     {
@@ -50,6 +56,15 @@ class MySQLTable
         }
     }
 
+    public function addIndex(MySQLColumnIndex $index)
+    {
+        if (isset($this->indexes[$index->getName()])) {
+            throw new Exception('Table already has an index with name '.$index->getName());
+        } else {
+            $this->indexes[$index->getName()] = $index;
+        }
+    }
+
     public function loadColumnsFromDB(): void
     {
         if (0 == strlen($this->name)) {
@@ -62,7 +77,17 @@ class MySQLTable
         foreach ($sqlDescriptionEntries as $entry) {
             $newColumn = new MySQLColumn();
             $newColumn->setName($entry['Field']);
-            $newColumn->setType($entry['Type']);
+
+            // type
+            $type = preg_replace('/(\([0-9]+\))/', '', $entry['Type']);
+            $newColumn->setType($type);
+
+            // length
+            preg_match('/\(([0-9]+)\)/', $entry['Type'], $match);
+            if (isset($match[1])) {
+                $newColumn->setLength($match[1]);
+            }
+
             $newColumn->setCanBeNull('YES' == $entry['Null']);
             $newColumn->setIsPrimaryKey('PRI' == $entry['Key']);
             $newColumn->setIsAutoIncrement('auto_increment' == $entry['Extra']);
@@ -72,7 +97,7 @@ class MySQLTable
                 $newColumn->setDefaultValue($entry['Default']);
             }
 
-            $this->columns[$newColumn->getName()] = $newColumn;
+            $this->addColumn($newColumn);
         }
     }
 
@@ -81,6 +106,10 @@ class MySQLTable
      */
     public function loadConstraintInformationPerColumn(): void
     {
+        if (0 == strlen($this->name)) {
+            throw new Exception('Table name is not set.');
+        }
+
         // foreign key
         $sql = 'SELECT *
                   FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
@@ -118,6 +147,29 @@ class MySQLTable
         }
     }
 
+    public function loadIndexInformation(): void
+    {
+        if (0 == strlen($this->name)) {
+            throw new Exception('Table name is not set.');
+        }
+
+        $indexInfoArr = $this->connection->fetchAllAssociative('SHOW INDEXES FROM '.$this->name);
+
+        foreach ($indexInfoArr as $indexInfo) {
+            if (isset($this->columns[$indexInfo['Column_name']])) {
+                $index = new MySQLColumnIndex();
+                $index->setName($indexInfo['Key_name']);
+                $index->setColumnName($indexInfo['Column_name']);
+                $index->setIsUnique('0' == $indexInfo['Non_unique']);
+                $index->setIndexType($indexInfo['Index_type']);
+
+                $this->addIndex($index);
+            } else {
+                throw new Exception('Setup column '.$indexInfo['Column_name'].' before load constraint information.');
+            }
+        }
+    }
+
     public function hasColumnWithName(string $name): bool
     {
         return true === isset($this->columns[$name]);
@@ -132,6 +184,20 @@ class MySQLTable
         throw new Exception('Table does not have a column with name '.$name);
     }
 
+    public function hasIndexWithName(string $name): bool
+    {
+        return true === isset($this->indexes[$name]);
+    }
+
+    public function getIndexWithName(string $name): MySQLColumnIndex
+    {
+        if ($this->hasColumnWithName($name)) {
+            return $this->indexes[$name];
+        }
+
+        throw new Exception('Table does not have an index with name '.$name);
+    }
+
     public function checkDiffAndCreateSQLStatements(self $otherTable): array
     {
         $report = [
@@ -140,8 +206,13 @@ class MySQLTable
             'dropForeignKeyStatements' => [],
             'addPrimaryKeyStatements' => [],
             'dropPrimaryKeyStatements' => [],
+            'addKeyStatements' => [],
+            'dropKeyStatements' => [],
         ];
 
+        /**
+         * columns
+         */
         foreach ($this->columns as $columnName => $column) {
             // column exists
             if ($otherTable->hasColumnWithName($columnName)) {
@@ -171,6 +242,23 @@ class MySQLTable
                 if ($column->getConstraint() instanceof MySQLColumnConstraint) {
                     $report['addForeignKeyStatements'][] = $column->getConstraint()->toAddStatement($this->name);
                 }
+            }
+        }
+
+        /*
+         * indexes
+         */
+        foreach ($this->indexes as $indexName => $index) {
+            // index exists
+            if ($otherTable->hasIndexWithName($indexName)) {
+                $otherIndex = $otherTable->getIndexWithName($indexName);
+                if ($index->differsFrom($otherIndex)) {
+                    $report['dropKeyStatements'][] = $index->toDropStatement($this->name);
+                    $report['addKeyStatements'][] = $index->toAddStatement($this->name);
+                }
+            } else {
+                // index does not exist
+                $report['addKeyStatements'][] = $index->toAddStatement($this->name);
             }
         }
 

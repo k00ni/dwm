@@ -36,8 +36,7 @@
                         "@id": "dwm:addressList"
                     },
                     "dwm:listWithEntriesOfType": "dwm:Address",
-                    "sh:minCount": 1,
-                    "sh:maxLength": 255
+                    "sh:minCount": 1
                 }
             ]
         },

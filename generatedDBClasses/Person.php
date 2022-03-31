@@ -5,18 +5,20 @@ namespace DWM\DBClass;
 /**
  * Auto generated. Changes will be overriden.
  *
- * @dwm-class-id https://github.com/k00ni/dwm#Person
- * @dwm-nodeshape-id https://github.com/k00ni/dwm#PersonShape
+ * @dwmClassId https://github.com/k00ni/dwm#Person
+ * @dwmNodeshapeId https://github.com/k00ni/dwm#PersonShape
  */
 class Person
 {
     /**
-     * @dwm-type-id http://www.w3.org/2001/XMLSchema#string
-     * @dwm-type string
+     * @dwmTypeId http://www.w3.org/2001/XMLSchema#string
+     * @dwmType string
+     * @dwmMaxLength 255
      */
     private string $givenName;
 
     /**
+     * @dwmMinCount 1
      * @var array<Address>
      */
     private array $addressList = [];

@@ -154,8 +154,8 @@ class GenerateDBClassesFromKnowledge extends Process
         $content[] = '/**';
         $content[] = ' * Auto generated. Changes will be overriden.';
         $content[] = ' *';
-        $content[] = ' * @dwm-class-id '.$classConfig['classUri'];
-        $content[] = ' * @dwm-nodeshape-id '.$classConfig['relatedNodeShapeId'];
+        $content[] = ' * @dwmClassId '.$classConfig['classUri'];
+        $content[] = ' * @dwmNodeshapeId '.$classConfig['relatedNodeShapeId'];
         $content[] = ' */';
 
         // class
@@ -171,8 +171,12 @@ class GenerateDBClassesFromKnowledge extends Process
             $phpDocType = $phpTypeInfo['phpDocType'] ?? null;
             $content[] = '    /**';
             if (null == $phpDocType) {
-                $content[] = '     * @dwm-type-id '.$property['datatypeId'];
-                $content[] = '     * @dwm-type '.$rawPHPType;
+                $content[] = '     * @dwmTypeId '.$property['datatypeId'];
+                $content[] = '     * @dwmType '.$rawPHPType;
+
+                if (isset($property['maxLength'])) {
+                    $content[] = '     * @dwmMaxLength '.$property['maxLength'];
+                }
             } else {
                 // if URI was given, translate it to raw classname
                 if (str_contains($phpDocType, ':')) {
@@ -183,6 +187,14 @@ class GenerateDBClassesFromKnowledge extends Process
                     } else {
                         throw new Exception('No class information found for PHP Doc type.');
                     }
+                }
+
+                if (isset($property['minCount'])) {
+                    $content[] = '     * @dwmMinCount '.$property['minCount'];
+                }
+
+                if (isset($property['maxCount'])) {
+                    $content[] = '     * @dwmMaxCount '.$property['maxCount'];
                 }
 
                 $content[] = '     * @var '.$phpDocType;

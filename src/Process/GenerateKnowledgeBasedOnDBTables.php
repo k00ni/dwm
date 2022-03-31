@@ -330,18 +330,18 @@ class GenerateKnowledgeBasedOnDBTables extends Process
 
                 // sh:minCount
                 if (isset($property['minCount'])) {
-                    $newEntry['sh:minCount'] = $property['minCount'];
+                    $newEntry['sh:minCount'] = (int) $property['minCount'];
                 }
 
                 // maxLength
                 if (isset($property['maxLength'])) {
-                    $newEntry['sh:maxLength'] = $property['maxLength'];
+                    $newEntry['sh:maxLength'] = (int) $property['maxLength'];
                 }
 
                 // precision + scale
                 if (isset($property['precision']) && isset($property['scale'])) {
-                    $newEntry['dwm:precision'] = $property['precision'];
-                    $newEntry['dwm:scale'] = $property['scale'];
+                    $newEntry['dwm:precision'] = (int) $property['precision'];
+                    $newEntry['dwm:scale'] = (int) $property['scale'];
                 }
 
                 // mysqlColumnDataType

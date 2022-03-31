@@ -5,14 +5,15 @@ namespace DWM\DBClass;
 /**
  * Auto generated. Changes will be overriden.
  *
- * @dwm-class-id https://github.com/k00ni/dwm#Address
- * @dwm-nodeshape-id https://github.com/k00ni/dwm#AddressShape
+ * @dwmClassId https://github.com/k00ni/dwm#Address
+ * @dwmNodeshapeId https://github.com/k00ni/dwm#AddressShape
  */
 class Address
 {
     /**
-     * @dwm-type-id http://www.w3.org/2001/XMLSchema#string
-     * @dwm-type string
+     * @dwmTypeId http://www.w3.org/2001/XMLSchema#string
+     * @dwmType string
+     * @dwmMaxLength 255
      */
     private string $streetAddress;
 

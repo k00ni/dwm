@@ -39,7 +39,7 @@ class MySQLColumnTest extends DBTestCase
 
         $this->assertEquals(
             [
-                'alterTableStatement' => 'ALTER TABLE `t1` CHANGE `col1` `col1` int(10) AUTO_INCREMENT DEFAULT "dv1" NOT NULL',
+                'alterTableStatement' => 'ALTER TABLE `t1` CHANGE `col1` `col1` int(10) AUTO_INCREMENT DEFAULT "dv1" NOT NULL;',
                 'addPrimaryKeyStatement' => 'ALTER TABLE t1 ADD PRIMARY KEY(col1);',
                 'dropPrimaryKeyStatement' => null,
                 'addForeignKeyStatement' => 'ALTER TABLE `t1`ADD CONSTRAINT `constraint1` FOREIGN KEY (`col1`) REFERENCES `refTable` (`refColumn`) ON DELETE CASCADE;',

@@ -206,10 +206,10 @@ class MySQLColumn
         $result = 'ALTER TABLE `'.$table.'` '.$type;
 
         if ('CHANGE' == $type) {
-            $result .= ' `'.$this->name.'` ';
+            $result .= ' `'.$this->name.'`';
         }
 
-        $result .= $this->toLine();
+        $result .= ' '.$this->toLine().';';
 
         return $result;
     }

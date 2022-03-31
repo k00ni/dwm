@@ -164,8 +164,7 @@ class MySQLTable
                 $report['alterTableStatements'][] = $column->toAlterTable($this->name, 'ADD');
 
                 if ($column->getIsPrimaryKey()) {
-                    $stmt = 'ALTER TABLE '.$this->name.' ADD PRIMARY KEY';
-                    $stmt .= '('.$column->getName().');';
+                    $stmt = 'ALTER TABLE '.$this->name.' ADD PRIMARY KEY('.$column->getName().');';
                     $report['addPrimaryKeyStatements'][] = $stmt;
                 }
 

@@ -22,7 +22,7 @@
     "minimum-stability": "stable",
     "require": {
         "php": "^8.0",
-        "composer-runtime-api": "^2.1",
+        "composer-runtime-api": "^2.2",
         "doctrine/dbal": "^3.3.4",
         "ml/json-ld": "^1.2"
     },

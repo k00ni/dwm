@@ -13,6 +13,8 @@
     "bin": [
         "bin/createKnowledgeMaps",
         "bin/generateDBClassesFromKnowledge",
+        "bin/generateDBSchemaBasedOnKnowledge",
+        "bin/generateKnowledgeBasedOnDBTables",
         "bin/mergeJsonLDFiles",
         "bin/runJenaShaclBin",
         "bin/verifyProcesses"

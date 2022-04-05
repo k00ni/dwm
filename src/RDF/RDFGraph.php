@@ -100,6 +100,11 @@ class RDFGraph implements Countable
         return $this->rdfEntries;
     }
 
+    public function getNamespaceHelper(): NamespaceHelper
+    {
+        return $this->namespaceHelper;
+    }
+
     /**
      * @return array<mixed>|null
      */

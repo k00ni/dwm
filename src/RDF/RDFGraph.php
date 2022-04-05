@@ -6,9 +6,8 @@ namespace DWM\RDF;
 
 use Countable;
 use DWM\Exception\EntryNotFoundException;
-use Exception;
-
 use function DWM\isEmpty;
+use Exception;
 
 class RDFGraph implements Countable
 {
@@ -26,9 +25,41 @@ class RDFGraph implements Countable
     {
         $this->namespaceHelper = new NamespaceHelper();
 
+        $this->initialize($jsonArray);
+    }
+
+    /**
+     * @param array<array<mixed>> $jsonArray
+     */
+    private function initialize(array $jsonArray = []): void
+    {
         $this->rdfEntries = array_map(function ($rdfJsonArrayEntry) {
             return new RDFEntry($rdfJsonArrayEntry);
         }, $jsonArray);
+    }
+
+    /**
+     * @throws Exception if decoded JSON is not an array
+     * @throws Exception if merged filepath is not readable
+     * @throws Exception if merged filepath does not exist
+     */
+    public function initializeWithMergedKnowledgeJsonLDFile(string $mergedFilePath): void
+    {
+        if (file_exists($mergedFilePath)) {
+            $content = file_get_contents($mergedFilePath);
+            if (is_string($content)) {
+                $jsonArr = json_decode($content, true);
+                if (is_array($jsonArr)) {
+                    $this->initialize($jsonArr);
+                } else {
+                    throw new Exception('Decoded JSON is not an array.');
+                }
+            } else {
+                throw new Exception('Could not read content of '.$mergedFilePath);
+            }
+        } else {
+            throw new Exception('Merged knowledge file does not exist: '.$mergedFilePath);
+        }
     }
 
     public function __toString()

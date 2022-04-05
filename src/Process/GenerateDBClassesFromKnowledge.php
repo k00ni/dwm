@@ -56,18 +56,9 @@ class GenerateDBClassesFromKnowledge extends Process
     {
         $mergedFilePath = $this->dwmConfig->getMergedKnowledgeJsonLDFilePath();
 
-        if (true === is_string($mergedFilePath) && file_exists($mergedFilePath)) {
-            $content = file_get_contents($mergedFilePath);
-            if (is_string($content)) {
-                $jsonArr = json_decode($content, true);
-                if (is_array($jsonArr)) {
-                    $this->graph = new RDFGraph($jsonArr);
-                } else {
-                    throw new Exception('Decoded JSON is not an array.');
-                }
-            } else {
-                throw new Exception('Could not read content of '.$mergedFilePath);
-            }
+        if (true === is_string($mergedFilePath)) {
+            $this->graph = new RDFGraph();
+            $this->graph->initializeWithMergedKnowledgeJsonLDFile($mergedFilePath);
         } else {
             throw new Exception('Merged knowledge file doesn not exist: '.$mergedFilePath);
         }

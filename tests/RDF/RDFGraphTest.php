@@ -82,4 +82,12 @@ class RDFGraphTest extends TestCase
             $propInfo
         );
     }
+
+    public function testInitializeWithMergedKnowledgeJsonLDFile(): void
+    {
+        $sut = new RDFGraph();
+        $sut->initializeWithMergedKnowledgeJsonLDFile($this->rootDir.'/test/data/rdfGraph1.jsonld');
+
+        self::assertCount(11, $sut);
+    }
 }

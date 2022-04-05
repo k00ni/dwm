@@ -3,6 +3,8 @@
 DWM is a project which explores real knowledge-driven approaches to bolster software development.
 Focus is currently on systems written with PHP 8.0+.
 
+**Current state:** Under heavy development, pre-alpha.
+
 ## License
 
 This work is licensed under the terms of MIT license.

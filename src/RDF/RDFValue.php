@@ -15,10 +15,8 @@ class RDFValue
     /**
      * @param array<string,string|bool|int> $data
      */
-    public function __construct(array $data)
+    public function __construct(array $data, NamespaceHelper $namespaceHelper)
     {
-        $namespaceHelper = new NamespaceHelper();
-
         // @id is either a blank node ID or URI
         if (isset($data['@id'])) {
             $this->id = $namespaceHelper->expandId((string) $data['@id']);
@@ -39,7 +37,6 @@ class RDFValue
 
             $this->value = (string) $data['@value'];
         } else {
-            var_dump($data);
             throw new Exception('Either @value or @id must be set.');
         }
 

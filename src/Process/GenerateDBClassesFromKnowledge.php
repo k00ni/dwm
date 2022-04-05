@@ -6,6 +6,7 @@ namespace DWM\Process;
 
 use DWM\Attribute\ProcessStep;
 use DWM\DWMConfig;
+use DWM\RDF\NamespaceHelper;
 use DWM\RDF\RDFGraph;
 use DWM\SimpleStructure\Process;
 use Exception;
@@ -57,7 +58,7 @@ class GenerateDBClassesFromKnowledge extends Process
         $mergedFilePath = $this->dwmConfig->getMergedKnowledgeJsonLDFilePath();
 
         if (true === is_string($mergedFilePath)) {
-            $this->graph = new RDFGraph();
+            $this->graph = new RDFGraph(new NamespaceHelper());
             $this->graph->initializeWithMergedKnowledgeJsonLDFile($mergedFilePath);
         } else {
             throw new Exception('Merged knowledge file doesn not exist: '.$mergedFilePath);

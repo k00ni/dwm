@@ -18,23 +18,18 @@ class RDFGraph implements Countable
      */
     private array $rdfEntries;
 
-    /**
-     * @param array<array<mixed>> $jsonArray
-     */
-    public function __construct(array $jsonArray = [])
+    public function __construct(NamespaceHelper $namespaceHelper)
     {
-        $this->namespaceHelper = new NamespaceHelper();
-
-        $this->initialize($jsonArray);
+        $this->namespaceHelper = $namespaceHelper;
     }
 
     /**
      * @param array<array<mixed>> $jsonArray
      */
-    private function initialize(array $jsonArray = []): void
+    public function initialize(array $jsonArray = []): void
     {
         $this->rdfEntries = array_map(function ($rdfJsonArrayEntry) {
-            return new RDFEntry($rdfJsonArrayEntry);
+            return new RDFEntry($rdfJsonArrayEntry, $this->namespaceHelper);
         }, $jsonArray);
     }
 
@@ -232,7 +227,7 @@ class RDFGraph implements Countable
 
     public function getSubGraphWithEntriesOfType(string $typeId): RDFGraph
     {
-        $subGraph = new self();
+        $subGraph = new self($this->namespaceHelper);
 
         foreach ($this->rdfEntries as $rdfEntry) {
             if ($rdfEntry->hasTypeOneOf([$typeId])) {
@@ -248,7 +243,7 @@ class RDFGraph implements Countable
      */
     public function getSubGraphWithEntriesWithIdOneOf(array $ids): RDFGraph
     {
-        $subGraph = new self();
+        $subGraph = new self($this->namespaceHelper);
 
         foreach ($ids as $id) {
             foreach ($this->rdfEntries as $rdfEntry) {
@@ -264,7 +259,7 @@ class RDFGraph implements Countable
 
     public function getSubGraphWithEntriesWithPropertyValue(string $propertyId, string $value): RDFGraph
     {
-        $subGraph = new self();
+        $subGraph = new self($this->namespaceHelper);
 
         foreach ($this->rdfEntries as $rdfEntry) {
             if ($rdfEntry->hasPropertyValue($propertyId, $value)) {

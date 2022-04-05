@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace DWM\Tests\RDF;
 
+use DWM\RDF\NamespaceHelper;
 use DWM\RDF\RDFEntry;
 use DWM\RDF\RDFValue;
 use DWM\Test\TestCase;
@@ -41,7 +42,7 @@ class RDFEntryTest extends TestCase
      */
     private function getSubjectUnderTest(array $arr): RDFEntry
     {
-        return new RDFEntry($arr);
+        return new RDFEntry($arr, new NamespaceHelper());
     }
 
     public function testUsage(): void
@@ -83,7 +84,7 @@ class RDFEntryTest extends TestCase
          * getPropertyValue
          */
         self::assertEquals(
-            new RDFValue(['@value' => '1', '@type' => 'http://www.w3.org/2001/XMLSchema#integer']),
+            new RDFValue(['@value' => '1', '@type' => 'http://www.w3.org/2001/XMLSchema#integer'], new NamespaceHelper()),
             $sut->getPropertyValue('http://www.w3.org/ns/shacl#minCount')
         );
     }

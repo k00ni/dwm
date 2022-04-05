@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace DWM\Tests\RDF;
 
+use DWM\RDF\NamespaceHelper;
 use DWM\RDF\RDFGraph;
 use DWM\Test\TestCase;
 use Exception;
@@ -40,7 +41,10 @@ class RDFGraphTest extends TestCase
      */
     private function getSubjectUnderTest(array $arr): RDFGraph
     {
-        return new RDFGraph($arr);
+        $graph = new RDFGraph(new NamespaceHelper());
+        $graph->initialize($arr);
+
+        return $graph;
     }
 
     public function testGeneralUsage(): void
@@ -85,7 +89,7 @@ class RDFGraphTest extends TestCase
 
     public function testInitializeWithMergedKnowledgeJsonLDFile(): void
     {
-        $sut = new RDFGraph();
+        $sut = new RDFGraph(new NamespaceHelper());
         $sut->initializeWithMergedKnowledgeJsonLDFile($this->rootDir.'/test/data/rdfGraph1.jsonld');
 
         self::assertCount(11, $sut);

@@ -14,21 +14,21 @@ final class RDFEntry
     private NamespaceHelper $namespaceHelper;
 
     /**
-     * @var array<string>
-     */
-    private array $types = [];
-
-    /**
      * @var array<string,array<RDFValue>>
      */
     private array $propertyValues = [];
 
     /**
+     * @var array<string>
+     */
+    private array $types = [];
+
+    /**
      * @param array<mixed> $jsonLDAsArray
      */
-    public function __construct(array $jsonLDAsArray)
+    public function __construct(array $jsonLDAsArray, NamespaceHelper $namespaceHelper)
     {
-        $this->namespaceHelper = new NamespaceHelper();
+        $this->namespaceHelper = $namespaceHelper;
 
         // @id
         /** @var string */
@@ -78,7 +78,7 @@ final class RDFEntry
                     $value = ['@value' => $value];
                 }
 
-                $this->propertyValues[$propertyId][] = new RDFValue($value);
+                $this->propertyValues[$propertyId][] = new RDFValue($value, $this->namespaceHelper);
             }
         }
     }

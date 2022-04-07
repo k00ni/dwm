@@ -16,7 +16,7 @@ class RDFGraph implements Countable
     /**
      * @var array<RDFEntry>
      */
-    private array $rdfEntries;
+    private array $rdfEntries = [];
 
     public function __construct(NamespaceHelper $namespaceHelper)
     {

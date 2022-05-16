@@ -78,11 +78,22 @@ final class RDFEntry
                     $value = ['@value' => $value];
                 }
 
-                $this->propertyValues[$propertyId][] = new RDFValue($value, $this->namespaceHelper);
+                if (isset($value['@list'])) {
+                    /** @var array<array<string,string>> */
+                    $list = (array) $value['@list'];
+                    foreach ($list as $listEntry) {
+                        $this->propertyValues[$propertyId][] = new RDFValue($listEntry, $this->namespaceHelper);
+                    }
+                } else {
+                    $this->propertyValues[$propertyId][] = new RDFValue($value, $this->namespaceHelper);
+                }
             }
         }
     }
 
+    /**
+     * Produce RDF/Turtle like string.
+     */
     public function __toString()
     {
         $result = PHP_EOL;

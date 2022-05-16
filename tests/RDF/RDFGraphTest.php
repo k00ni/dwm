@@ -6,6 +6,7 @@ namespace DWM\Tests\RDF;
 
 use DWM\RDF\NamespaceHelper;
 use DWM\RDF\RDFGraph;
+use DWM\RDF\RDFValue;
 use DWM\Test\TestCase;
 use Exception;
 
@@ -52,7 +53,7 @@ class RDFGraphTest extends TestCase
         $sut = $this->getSubjectUnderTest($this->rdfGraph1JsonArr);
 
         // getNumberOfNodes
-        self::assertCount(11, $sut);
+        self::assertCount(12, $sut);
 
         // get all classes
         $nodes = $sut->getSubGraphWithEntriesOfType('rdfs:Class');
@@ -92,6 +93,32 @@ class RDFGraphTest extends TestCase
         $sut = new RDFGraph(new NamespaceHelper());
         $sut->initializeWithMergedKnowledgeJsonLDFile($this->rootDir.'/test/data/rdfGraph1.jsonld');
 
-        self::assertCount(11, $sut);
+        self::assertCount(12, $sut);
+    }
+
+    public function testListHandling(): void
+    {
+        $sut = new RDFGraph(new NamespaceHelper());
+        $sut->initializeWithMergedKnowledgeJsonLDFile($this->rootDir.'/test/data/rdfGraph1.jsonld');
+
+        /*
+         * check
+         */
+        $list = $sut->getEntries()[11];
+
+        // properties
+        self::assertEquals(
+            ['http://www.w3.org/2002/07/owl#unionOf'],
+            $list->getPropertyIds()
+        );
+
+        // values
+        self::assertEquals(
+            [
+                new RDFValue(['@id' => 'http://www.onto-med.de/ontologies/gfo.owl#Spatial_boundary'], new NamespaceHelper()),
+                new RDFValue(['@id' => 'http://www.onto-med.de/ontologies/gfo.owl#Time_boundary'], new NamespaceHelper()),
+            ],
+            $list->getPropertyValues($list->getPropertyIds()[0])
+        );
     }
 }

@@ -215,5 +215,18 @@
                 "@value": "givenName"
             }
         ]
+    },
+    {
+        "@id" : "_:genid4",
+        "@type" : [ "http://www.w3.org/2002/07/owl#Class" ],
+        "http://www.w3.org/2002/07/owl#unionOf" : [
+            {
+                "@list" : [{
+                    "@id" : "http://www.onto-med.de/ontologies/gfo.owl#Spatial_boundary"
+                }, {
+                    "@id" : "http://www.onto-med.de/ontologies/gfo.owl#Time_boundary"
+                }]
+            }
+        ]
     }
 ]

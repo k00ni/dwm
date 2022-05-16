@@ -262,6 +262,19 @@ class RDFGraph implements Countable
         return $subGraph;
     }
 
+    public function getSubGraphWithEntriesWithProperty(string $propertyId): RDFGraph
+    {
+        $subGraph = new self($this->namespaceHelper);
+
+        foreach ($this->rdfEntries as $rdfEntry) {
+            if ($rdfEntry->hasProperty($propertyId)) {
+                $subGraph->addRDFEntry($rdfEntry);
+            }
+        }
+
+        return $subGraph;
+    }
+
     public function getSubGraphWithEntriesWithPropertyValue(string $propertyId, string $value): RDFGraph
     {
         $subGraph = new self($this->namespaceHelper);

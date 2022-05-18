@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace DWM\Tests\RDF;
 
 use DWM\RDF\NamespaceHelper;
+use DWM\RDF\PropertyBasedHierarchyBuilder;
 use DWM\RDF\RDFGraph;
-use DWM\RDF\RdfsClassHierarchyBuilder;
 use DWM\Test\TestCase;
 
-class RdfsClassHierarchyBuilderTest extends TestCase
+class PropertyBasedHierarchyBuilderTest extends TestCase
 {
-    private function getSubjectUnderTest(RDFGraph $graph): RdfsClassHierarchyBuilder
+    private function getSubjectUnderTest(RDFGraph $graph): PropertyBasedHierarchyBuilder
     {
-        return new RdfsClassHierarchyBuilder($graph);
+        return new PropertyBasedHierarchyBuilder($graph);
     }
 
     public function testBuildNested1(): void
@@ -51,7 +51,7 @@ class RdfsClassHierarchyBuilderTest extends TestCase
 
         $sut = $this->getSubjectUnderTest($graph);
 
-        $result = $sut->buildNested();
+        $result = $sut->buildNested('rdfs:subClassOf');
 
         // check
         self::assertEquals(
@@ -115,7 +115,7 @@ class RdfsClassHierarchyBuilderTest extends TestCase
 
         $sut = $this->getSubjectUnderTest($graph);
 
-        $result = $sut->buildNested();
+        $result = $sut->buildNested('rdfs:subClassOf');
 
         // check
         self::assertEquals(

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace DWM\RDF;
 
 /**
- * Builds class hierarchies in different forms, like nested, using rdfs:subClassOf relations.
+ * Builds hierarchies in different forms, like nested, using a given property like rdfs:subClassOf.
  */
-class RdfsClassHierarchyBuilder
+class PropertyBasedHierarchyBuilder
 {
     private RDFGraph $graph;
 
@@ -30,44 +30,44 @@ class RdfsClassHierarchyBuilder
      *
      * @return array<mixed>
      */
-    public function buildNested(): array
+    public function buildNested(string $propertyUri): array
     {
-        $classIndex = [];
-        $subGraph = $this->graph->getSubGraphWithEntriesWithProperty('rdfs:subClassOf');
+        $index = [];
+        $subGraph = $this->graph->getSubGraphWithEntriesWithProperty($propertyUri);
 
         /*
          * build an index which will look like:
          *
-         * $classIndex
+         * $index
          *
          *      [
          *          'A' => [
-         *              'parent_class' => null,
-         *              'sub_classes' => ['B', 'C'],
+         *              'parent' => null,
+         *              'children' => ['B', 'C'],
          *          ]
          *          ...
          *      ]
          */
         foreach ($subGraph->getEntries() as $rdfEntry) {
-            foreach ($rdfEntry->getPropertyValues('rdfs:subClassOf') as $rdfValue) {
-                $parentClassUri = $rdfValue->getIdOrValue();
-                $childClassUri = $rdfEntry->getId();
+            foreach ($rdfEntry->getPropertyValues($propertyUri) as $rdfValue) {
+                $parentUri = $rdfValue->getIdOrValue();
+                $childUri = $rdfEntry->getId();
 
                 // parent
-                if (!isset($classIndex[$parentClassUri])) {
-                    $classIndex[$parentClassUri] = ['parent_class' => null, 'sub_classes' => [$childClassUri]];
+                if (!isset($index[$parentUri])) {
+                    $index[$parentUri] = ['parent' => null, 'children' => [$childUri]];
                 } else {
-                    $classIndex[$parentClassUri]['sub_classes'][] = $childClassUri;
+                    $index[$parentUri]['children'][] = $childUri;
                 }
 
                 // child
-                if (!isset($classIndex[$childClassUri])) {
-                    $classIndex[$childClassUri] = ['parent_class' => $parentClassUri, 'sub_classes' => []];
+                if (!isset($index[$childUri])) {
+                    $index[$childUri] = ['parent' => $parentUri, 'children' => []];
                 }
 
                 // if a parent becomes a child
-                if (null == $classIndex[$childClassUri]['parent_class']) {
-                    $classIndex[$childClassUri]['parent_class'] = $parentClassUri;
+                if (null == $index[$childUri]['parent']) {
+                    $index[$childUri]['parent'] = $parentUri;
                 }
             }
         }
@@ -100,37 +100,37 @@ class RdfsClassHierarchyBuilder
         $uncoveredClasses = [];
 
         // build root class level before going deeper
-        foreach ($classIndex as $classUri => $classArray) {
-            if (null == $classArray['parent_class']) {
-                $orderedList[$classUri] = 0;
-                $orderedListReversed[0][] = $classUri;
+        foreach ($index as $entryUri => $entryArray) {
+            if (null == $entryArray['parent']) {
+                $orderedList[$entryUri] = 0;
+                $orderedListReversed[0][] = $entryUri;
             } else {
                 // get position of parent
-                if (isset($orderedList[$classArray['parent_class']])) {
-                    $orderedList[$classUri] = $orderedList[$classArray['parent_class']] + 1;
+                if (isset($orderedList[$entryArray['parent']])) {
+                    $orderedList[$entryUri] = $orderedList[$entryArray['parent']] + 1;
 
                     // remember reversed way
-                    if (!isset($orderedListReversed[$orderedList[$classUri]])) {
-                        $orderedListReversed[$orderedList[$classUri]] = [];
+                    if (!isset($orderedListReversed[$orderedList[$entryUri]])) {
+                        $orderedListReversed[$orderedList[$entryUri]] = [];
                     }
-                    $orderedListReversed[$orderedList[$classUri]][] = $classUri;
+                    $orderedListReversed[$orderedList[$entryUri]][] = $entryUri;
                 } else {
                     // collect all classes whose parent class is not yet in $orderedList
-                    $uncoveredClasses[$classUri] = $classArray;
+                    $uncoveredClasses[$entryUri] = $entryArray;
                 }
             }
         }
 
         // handle uncovered classes
-        foreach ($uncoveredClasses as $classUri => $classArray) {
+        foreach ($uncoveredClasses as $entryUri => $entryArray) {
             // get position of parent
-            $orderedList[$classUri] = $orderedList[$classArray['parent_class']] + 1;
+            $orderedList[$entryUri] = $orderedList[$entryArray['parent']] + 1;
 
             // remember reversed way
-            if (!isset($orderedListReversed[$orderedList[$classUri]])) {
-                $orderedListReversed[$orderedList[$classUri]] = [];
+            if (!isset($orderedListReversed[$orderedList[$entryUri]])) {
+                $orderedListReversed[$orderedList[$entryUri]] = [];
             }
-            $orderedListReversed[$orderedList[$classUri]][] = $classUri;
+            $orderedListReversed[$orderedList[$entryUri]][] = $entryUri;
         }
 
         /*
@@ -160,12 +160,12 @@ class RdfsClassHierarchyBuilder
          *      ]
          */
         $result = [];
-        foreach ($orderedListReversed[0] as $rootClassUri) {
-            $result[$rootClassUri] = $this->setRelatedSubClasses(
-                $rootClassUri,
+        foreach ($orderedListReversed[0] as $rootEntryUri) {
+            $result[$rootEntryUri] = $this->setRelatedSubClasses(
+                $rootEntryUri,
                 $orderedListReversed,
                 1, // next level
-                $classIndex
+                $index
             );
         }
 
@@ -174,15 +174,15 @@ class RdfsClassHierarchyBuilder
 
     /**
      * @param array<int,array<string>>                                    $orderedListReversed
-     * @param array<string, array<string, array<int,string>|string|null>> $classIndex
+     * @param array<string, array<string, array<int,string>|string|null>> $index
      *
      * @return array<mixed>
      */
     private function setRelatedSubClasses(
-        string $parentClassUri,
+        string $parentUri,
         array $orderedListReversed,
         int $level,
-        array $classIndex
+        array $index
     ): array {
         $resultPart = [];
 
@@ -190,14 +190,14 @@ class RdfsClassHierarchyBuilder
             return $resultPart;
         }
 
-        foreach ($orderedListReversed[$level] as $classUri) {
+        foreach ($orderedListReversed[$level] as $entryUri) {
             // add class if their parent class matches
-            if ($classIndex[$classUri]['parent_class'] == $parentClassUri) {
-                $resultPart[$classUri] = $this->setRelatedSubClasses(
-                    $classUri,
+            if ($index[$entryUri]['parent'] == $parentUri) {
+                $resultPart[$entryUri] = $this->setRelatedSubClasses(
+                    $entryUri,
                     $orderedListReversed,
                     $level + 1,
-                    $classIndex
+                    $index
                 );
             }
         }

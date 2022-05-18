@@ -68,6 +68,8 @@ class RdfsClassHierarchyBuilder
          *          'A' => 0,
          *          'B' => 1,
          *          'C' => 2,
+         *          'D' => 1,
+         *          'E' => 2,
          *          ...
          *      ]
          *
@@ -129,36 +131,54 @@ class RdfsClassHierarchyBuilder
          *      ]
          *
          * assumption: class parent is either null (= root class) or set in $result already!
+         *
+         * $result will be looking like this in the end:
+         *
+         *          l=0  l=1    l=2...
+         *           |    |      |
+         *           v    v      v
+         *      [
+         *          'A' => [
+         *              'B' => ['C' => []],
+         *              'D' => ['E' => []],
+         *              ...
+         *          ]
+         *      ]
          */
         $result = [];
-        foreach ($orderedListReversed[0] as $classUri) {
-            $result[$classUri] = $this->findAndUpdateParentClassEntry(
+        foreach ($orderedListReversed[0] as $rootClassUri) {
+            $result[$rootClassUri] = $this->setRelatedSubClasses(
+                $rootClassUri,
                 $orderedListReversed,
-                $index
+                1, // next level
             );
         }
-
-        echo PHP_EOL;
-        echo PHP_EOL;
-        var_dump($result);
 
         return $result;
     }
 
-    private function findAndUpdateParentClassEntry(
+    private function setRelatedSubClasses(
+        string $parentClassUri,
         array $orderedListReversed,
-        int $index
+        int $level
     ): array {
-        if (!isset($orderedListReversed[$index])) {
-            return [];
+        $resultPart = [];
+
+        if (!isset($orderedListReversed[$level])) {
+            return $resultPart;
         }
 
-        $subResult = [];
-
-        foreach ($orderedListReversed[$index] as $classUri) {
-            // find
+        foreach ($orderedListReversed[$level] as $classUri) {
+            // add class if their parent class matches
+            if ($this->classIndex[$classUri]['parent_class'] == $parentClassUri) {
+                $resultPart[$classUri] = $this->setRelatedSubClasses(
+                    $classUri,
+                    $orderedListReversed,
+                    $level+1
+                );
+            }
         }
 
-        return $subResult;
+        return $resultPart;
     }
 }

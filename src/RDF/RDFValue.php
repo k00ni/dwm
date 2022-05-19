@@ -9,8 +9,9 @@ use Exception;
 class RDFValue
 {
     private ?string $id = null;
-    private ?string $value = null;
+    private ?string $language = null;
     private ?string $type = null;
+    private ?string $value = null;
 
     /**
      * @param array<string,string|bool|int> $data
@@ -33,6 +34,10 @@ class RDFValue
                 if (!isset($data['@type'])) {
                     $data['@type'] = 'http:\/\/www.w3.org\/2001\/XMLSchema#integer';
                 }
+            }
+
+            if (isset($data['@language'])) {
+                $this->language = (string) $data['@language'];
             }
 
             $this->value = (string) $data['@value'];
@@ -64,6 +69,11 @@ class RDFValue
     public function getIdOrValue(): ?string
     {
         return $this->id ?? $this->value;
+    }
+
+    public function getLanguage(): ?string
+    {
+        return $this->language;
     }
 
     public function getType(): ?string

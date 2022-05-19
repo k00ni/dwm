@@ -13,7 +13,10 @@ class PropertyBasedHierarchyBuilderTest extends TestCase
 {
     private function getSubjectUnderTest(RDFGraph $graph): PropertyBasedHierarchyBuilder
     {
-        return new PropertyBasedHierarchyBuilder($graph);
+        $sut = new PropertyBasedHierarchyBuilder();
+        $sut->init($graph);
+
+        return $sut;
     }
 
     public function testBuildNested1(): void

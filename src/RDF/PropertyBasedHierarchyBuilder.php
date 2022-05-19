@@ -11,7 +11,7 @@ class PropertyBasedHierarchyBuilder
 {
     private RDFGraph $graph;
 
-    public function __construct(RDFGraph $graph)
+    public function init(RDFGraph $graph): void
     {
         $this->graph = $graph;
     }

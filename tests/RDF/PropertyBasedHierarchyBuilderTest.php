@@ -137,4 +137,83 @@ class PropertyBasedHierarchyBuilderTest extends TestCase
             $result
         );
     }
+
+    public function testBuildNested3(): void
+    {
+        $graph = new RDFGraph(new NamespaceHelper());
+
+        /*
+         * hierarchy looks like:
+         *
+         *      A                       <--- root
+         *       `--- B
+         *       |     `--- C
+         *       |
+         *       `--- D
+         *             `--- D           <--- self reference, to be ignored
+         */
+        $graph->initialize([
+            [
+                '@id' => 'http://class/C',
+                'http://www.w3.org/2000/01/rdf-schema#subClassOf' => 'http://class/B',
+            ],
+            [
+                '@id' => 'http://class/D',
+                'http://www.w3.org/2000/01/rdf-schema#subClassOf' => 'http://class/A',
+            ],
+            [
+                '@id' => 'http://class/B',
+                'http://www.w3.org/2000/01/rdf-schema#subClassOf' => 'http://class/A',
+            ],
+            [
+                '@id' => 'http://class/D',
+                'http://www.w3.org/2000/01/rdf-schema#subClassOf' => 'http://class/D',
+            ],
+        ]);
+
+        $sut = $this->getSubjectUnderTest($graph);
+
+        $result = $sut->buildNested('rdfs:subClassOf');
+
+        // check
+        self::assertEquals(
+            [
+                'http://class/A' => [
+                    'http://class/B' => [
+                        'http://class/C' => [],
+                    ],
+                    'http://class/D' => [],
+                ],
+            ],
+            $result
+        );
+    }
+
+    public function testBuildNested4(): void
+    {
+        $graph = new RDFGraph(new NamespaceHelper());
+
+        /*
+         * hierarchy looks like:
+         *
+         *      A                       <--- root
+         *       `--- A
+         */
+        $graph->initialize([
+            [
+                '@id' => 'http://class/A',
+                'http://www.w3.org/2000/01/rdf-schema#subClassOf' => 'http://class/A',
+            ],
+        ]);
+
+        $sut = $this->getSubjectUnderTest($graph);
+
+        $result = $sut->buildNested('rdfs:subClassOf');
+
+        // check
+        self::assertEquals(
+            [],
+            $result
+        );
+    }
 }

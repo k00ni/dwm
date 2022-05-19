@@ -53,6 +53,11 @@ class PropertyBasedHierarchyBuilder
                 $parentUri = $rdfValue->getIdOrValue();
                 $childUri = $rdfEntry->getId();
 
+                // ignore self reference (like A <== A)
+                if ($parentUri == $childUri) {
+                    continue;
+                }
+
                 // parent
                 if (!isset($index[$parentUri])) {
                     $index[$parentUri] = ['parent' => null, 'children' => [$childUri]];
@@ -70,6 +75,10 @@ class PropertyBasedHierarchyBuilder
                     $index[$childUri]['parent'] = $parentUri;
                 }
             }
+        }
+
+        if (0 == count($index)) {
+            return [];
         }
 
         /*
@@ -123,6 +132,11 @@ class PropertyBasedHierarchyBuilder
 
         // handle uncovered classes
         foreach ($uncoveredClasses as $entryUri => $entryArray) {
+            // ignore self reference (like A <== A)
+            if ($entryUri == $entryArray['parent']) {
+                continue;
+            }
+
             // get position of parent
             $orderedList[$entryUri] = $orderedList[$entryArray['parent']] + 1;
 

@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace DWM;
 
+if (function_exists('isEmpty')) {
+    return;
+}
+
 /**
  * It seems that empty() is not enough to check, if something is really empty.
  * This function makes sure of the edge cases.

@@ -31,6 +31,9 @@ class PropertyHelper
     public function init(RDFGraph $graph): void
     {
         $this->graph = $graph;
+
+        // new graph => reset
+        $this->knownResourceTitles = [];
     }
 
     public function getValue(string $subjectUri, ?string $language = null): ?string
